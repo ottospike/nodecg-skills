@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NOME DA PEÇA — o que ela mostra</title>
+    <link rel="stylesheet" href="shared/fontes.css" />
+    <style>
+      /* NOME DA PEÇA — onde fica no quadro.
+         Números de assets/<slug>/ASSETS.md e assets.json.
+
+         Diga aqui o que a peça é e o que ela NÃO é: quantos estados tem, se tem
+         variantes, o que vem queimado no PNG e o que é desenhado aqui. */
+      :root {
+        /* plate: x 157, y 805, 421x106 — copie a geometria do assets.json */
+        --plate-x: 157px;
+        --plate-y: 805px;
+        --plate-w: 421px;
+        --plate-h: 106px;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        background: transparent;   /* overlay: nunca cor de fundo */
+        overflow: hidden;
+        user-select: none;
+      }
+
+      /* Tamanho EXATO da arte. O fit.js escala o body a partir daqui. */
+      .stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        transform-origin: top left;
+      }
+
+      /* Nasce invisível: sem isso a peça pisca inteira no instante em que a
+         browser source carrega, antes de qualquer estado chegar. Quem liga e
+         desliga é a timeline. */
+      .bloco {
+        position: absolute;
+        left: 0; top: 0;
+        width: 1920px; height: 1080px;
+        opacity: 0;
+        will-change: opacity, transform;
+      }
+
+      .plate {
+        position: absolute;
+        left: var(--plate-x); top: var(--plate-y);
+        width: var(--plate-w); height: var(--plate-h);
+        background: url("assets/<slug>/plate.png") no-repeat;
+        background-size: var(--plate-w) var(--plate-h);
+      }
+
+      /* `top` pressupõe line-height 1 e vem da baseline do PSD menos o ascent da
+         caixa inline. */
+      .texto {
+        position: absolute;
+        left: 280px; top: 843px;
+        white-space: nowrap;
+        line-height: 1;
+        text-transform: uppercase;   /* no PSD a camada é minúscula com allCaps */
+        font: 500 40px "Haffer", sans-serif;
+        color: #faf5f0;
+      }
+
+      /* Diagnóstico — só aparece em dev mode, nunca no ar. */
+      #dev {
+        position: absolute; left: 24px; top: 24px;
+        font: 500 20px/1.4 ui-monospace, "Cascadia Mono", monospace;
+        color: #d0d0e0; background: rgba(0, 0, 0, 0.6);
+        padding: 10px 16px; border-radius: 6px;
+        white-space: pre; pointer-events: none; display: none;
+      }
+      .stage.dev #dev { display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <div class="bloco" id="bloco">
+        <div class="plate"></div>
+        <div class="texto" id="texto"></div>
+      </div>
+      <div id="dev"></div>
+    </div>
+
+    <!-- GSAP vendorizado: máquina de transmissão pode estar sem internet, e CDN
+         fora do ar põe o gráfico no ar sem animação. -->
+    <script src="vendor/gsap.min.js"></script>
+
+    <script>
+      /* Limites vindos da arte, não do gosto. Se o texto pode estourar o plate,
+         declare o teto e o piso aqui e explique de onde saíram. */
+      const LARGURA_MAX = 241;   // borda útil do plate menos folga interna
+      const TAM_MAX = 40;
+      const TAM_MIN = 28;
+
+      const stageEl = document.getElementById("stage");
+      const blocoEl = document.getElementById("bloco");
+      const textoEl = document.getElementById("texto");
+      const devEl = document.getElementById("dev");
+
+      const diag = { texto: "", tam: TAM_MAX, estourou: false, noAr: false };
+
+      function pintarDiag() {
+        if (!stageEl.classList.contains("dev")) return;
+        devEl.textContent =
+          `texto: ${diag.texto || "—"}\n` +
+          `font-size: ${diag.tam}px (max ${TAM_MAX}, piso ${TAM_MIN})` +
+          (diag.estourou ? "  ESTOUROU" : "") +
+          `\nno ar: ${diag.noAr}`;
+      }
+
+      /* Reduz de 1 em 1px até caber. Loop e não conta fechada porque a largura
+         depende do tracking e do kerning da string, não da contagem de letras. */
+      function ajustar() {
+        let tam = TAM_MAX;
+        textoEl.style.fontSize = tam + "px";
+        while (tam > TAM_MIN && textoEl.getBoundingClientRect().width > LARGURA_MAX) {
+          tam -= 1;
+          textoEl.style.fontSize = tam + "px";
+        }
+        diag.tam = tam;
+        diag.estourou = textoEl.getBoundingClientRect().width > LARGURA_MAX;
+
+        // No piso e ainda estourando: avisa, mas deixa no ar. Cortar o texto é
+        // pior que passar alguns pixels da arte.
+        if (diag.estourou) nodecg.log.warn(`[<peça>] "${diag.texto}" não cabe nem em ${TAM_MIN}px.`);
+      }
+
+      function render(state) {
+        diag.texto = ((state && state.texto) || "").trim();
+        textoEl.textContent = diag.texto;
+        ajustar();
+        pintarDiag();
+      }
+
+      /* ---------- animação ----------
+         Deslocamento de entrada: cobre plate + margem, pra sair inteira do quadro.
+         Ajuste ao movimento que a arte pede — o spec do PSD costuma dizer de que
+         canto a peça nasce. */
+      const FORA_X = -(parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue("--plate-x")) + parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue("--plate-w")));
+
+      let tl = null;
+
+      function entrar() {
+        tl && tl.kill();
+        tl = gsap.timeline();
+        // Reset explícito: se a saída nunca rodou (source recarregada, OUT dado no
+        // switcher), sem isto o segundo PLAY começa do estado final e não anima.
+        tl.set(blocoEl, { opacity: 0, x: FORA_X });
+        tl.to(blocoEl, { opacity: 1, duration: 0.35, ease: "power2.out" });
+        tl.to(blocoEl, { x: 0, duration: 0.55, ease: "expo.out" }, 0);
+        return tl;
+      }
+
+      function sair() {
+        tl && tl.kill();
+        tl = gsap.timeline();
+        tl.to(blocoEl, { x: FORA_X, duration: 0.45, ease: "power2.in" });
+        tl.to(blocoEl, { opacity: 0, duration: 0.3 }, 0.1);
+        return tl;
+      }
+
+      // Sem animação: é o estado que já existia quando esta tela abriu.
+      function pular(visivel) {
+        gsap.set(blocoEl, { opacity: visivel ? 1 : 0, x: visivel ? 0 : FORA_X });
+      }
+
+      // Gráfico lê SEM defaultValue: quem define o formato é quem controla.
+      const DB_PECA = nodecg.Replicant("DB_PECA");
+      let noArNaTela = false;
+      let primeiro = true;
+
+      DB_PECA.on("change", (state) => {
+        render(state);
+
+        const visivel = !!state && state.visivel === true;
+        diag.noAr = visivel;
+
+        /* Trava de primeiro estado: um refresh da browser source com a peça no ar
+           não pode fazer ela re-entrar deslizando, no ar. */
+        if (primeiro) {
+          primeiro = false;
+          noArNaTela = visivel;
+          pular(visivel);
+          pintarDiag();
+          return;
+        }
+
+        // Trava de on-air: só anima na transição. PLAY com a peça no ar não re-anima.
+        if (visivel !== noArNaTela) {
+          noArNaTela = visivel;
+          visivel ? entrar() : sair();
+        }
+
+        pintarDiag();
+      });
+
+      const DB_DEVMODE = nodecg.Replicant("DB_DEVMODE");
+      DB_DEVMODE.on("change", (v) => {
+        stageEl.classList.toggle("dev", v === true);
+        pintarDiag();
+      });
+
+      /* Reajusta quando a fonte real chega: medir no fallback dá tamanho errado. */
+      if (document.fonts) document.fonts.ready.then(ajustar).then(pintarDiag);
+
+      /* Ensaio no navegador, sem depender do painel. É também o gancho pro render
+         headless de verificação.
+
+         Confira o replay: test() → testOut() → test(). Se a segunda entrada não
+         animar igual à primeira, falta um `set` no topo da timeline. */
+      window.test = function test(texto) {
+        render({ texto: texto || "EXEMPLO DO PSD" });
+        noArNaTela = true;
+        primeiro = false;
+        entrar();
+        return `"${diag.texto}" em ${diag.tam}px`;
+      };
+
+      window.testOut = function testOut() {
+        noArNaTela = false;
+        sair();
+      };
+    </script>
+
+    <script src="shared/fit.js"></script>
+    <script src="shared/devmode.js"></script>
+  </body>
+</html>

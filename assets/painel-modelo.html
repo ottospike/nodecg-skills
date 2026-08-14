@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Design system do dashboard. Painel não escreve CSS próprio. -->
+    <link rel="stylesheet" href="./betano.css" />
+  </head>
+  <body>
+    <!-- Bloco 1: liga/desliga puro. -->
+    <div class="sechd">
+      <h2>Nome da peça</h2>
+      <span class="onair" id="pecaAir" data-on="false">fora do ar</span>
+    </div>
+
+    <div class="barra">
+      <button class="bt bt-play" id="pecaPlay">PLAY</button>
+      <button class="bt bt-out" id="pecaOut">OUT</button>
+    </div>
+
+    <!-- Bloco 2: conteúdo preparado + SETAR + ar. `.sep` separa do anterior. -->
+    <div class="sechd sep">
+      <h2>Peça com texto</h2>
+      <span class="onair" id="txtAir" data-on="false">fora do ar</span>
+    </div>
+
+    <div class="campo">
+      <span class="rot">Texto</span>
+      <input type="text" id="txtCampo" placeholder="EXEMPLO DO PSD" autocomplete="off" />
+    </div>
+
+    <div class="barra">
+      <button class="bt bt-play bt-setar" id="txtSet">SETAR</button>
+      <button class="bt bt-play" id="txtPlay">PLAY</button>
+      <button class="bt bt-out" id="txtOut">OUT</button>
+    </div>
+
+    <div class="status" id="txtStatus"></div>
+
+    <script src="./comum.js"></script>
+
+    <script>
+      /* Painel <Nome>: o que ele controla, e o que NÃO controla (dizer onde mora
+         o resto ajuda quem for procurar).
+
+         Os replicants são declarados aqui, no dashboard, e não na extension —
+         editar e dar F5 no painel não exige reiniciar o NodeCG. */
+
+      /* ---------- peça simples (graphics/<arquivo>.html) ---------- */
+
+      const DB_PECA = nodecg.Replicant("DB_PECA", { defaultValue: { visivel: false } });
+
+      const pecaAir = document.getElementById("pecaAir");
+      const pecaPlay = document.getElementById("pecaPlay");
+      const pecaOut = document.getElementById("pecaOut");
+
+      DB_PECA.on("change", (s) => {
+        const noAr = !!s && s.visivel === true;
+        marcarAr(pecaAir, noAr);
+        // O botão apagado É a informação: PLAY off = já está no ar.
+        pecaPlay.disabled = noAr;
+        pecaOut.disabled = !noAr;
+      });
+
+      pecaPlay.addEventListener("click", () => { DB_PECA.value.visivel = true; });
+      pecaOut.addEventListener("click", () => { DB_PECA.value.visivel = false; });
+
+      /* ---------- peça com texto ---------- */
+
+      const DB_TEXTO = nodecg.Replicant("DB_TEXTO", {
+        defaultValue: { visivel: false, texto: "" },
+      });
+
+      const txtAir = document.getElementById("txtAir");
+      const txtCampo = document.getElementById("txtCampo");
+      const txtSet = document.getElementById("txtSet");
+      const txtPlay = document.getElementById("txtPlay");
+      const txtOut = document.getElementById("txtOut");
+      const txtStatus = document.getElementById("txtStatus");
+
+      // Digitar não vai ao ar: só o SETAR grava. Assim dá pra preparar o próximo
+      // texto com o atual ainda na tela.
+      const sujo = () =>
+        txtCampo.value.trim() !== "" &&
+        txtCampo.value.trim() !== ((DB_TEXTO.value && DB_TEXTO.value.texto) || "");
+
+      function pintar() {
+        const v = DB_TEXTO.value || {};
+        const noAr = v.visivel === true;
+
+        marcarAr(txtAir, noAr);
+        txtPlay.disabled = noAr;
+        txtOut.disabled = !noAr;
+        txtSet.disabled = !sujo();
+
+        // .status só onde acrescenta: aqui ele diz o que está NO AR, que os
+        // botões não dizem. Se não tivesse conteúdo dinâmico, não existiria.
+        txtStatus.innerHTML =
+          `no ar: <b>${v.texto || "—"}</b>` + (sujo() ? " · <b>pendente</b> — clique SETAR" : "");
+      }
+
+      function setar() {
+        const t = txtCampo.value.trim();
+        if (t === "") return;
+        DB_TEXTO.value.texto = t;
+      }
+
+      DB_TEXTO.on("change", (v) => {
+        if (!v) return;
+        // Não atropela quem está digitando.
+        if (document.activeElement !== txtCampo) txtCampo.value = v.texto || "";
+        pintar();
+      });
+
+      txtCampo.addEventListener("input", pintar);
+      txtCampo.addEventListener("keydown", (e) => { if (e.key === "Enter") setar(); });
+      txtSet.addEventListener("click", setar);
+      txtPlay.addEventListener("click", () => { DB_TEXTO.value.visivel = true; });
+      txtOut.addEventListener("click", () => { DB_TEXTO.value.visivel = false; });
+    </script>
+  </body>
+</html>
