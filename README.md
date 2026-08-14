@@ -1,7 +1,9 @@
 # nodecg — skill do Claude Code
 
-Convenções para construir e manter **bundles NodeCG de broadcast ao vivo**,
-extraídas dos bundles `betano` (Show do Apelão) e `cpn`.
+Um **builder de esqueleto** para grafismo em **bundles NodeCG de broadcast ao
+vivo**: onde o estado mora, como o arquivo se organiza, como a peça entra e sai do
+ar, como o operador controla. Agnóstico de temática — cor, fonte e tipo de peça
+vêm do projeto; a estrutura é a mesma em todos.
 
 O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 
@@ -14,6 +16,7 @@ O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 | `references/padroes-replicant.md` | 8 padrões de estado com código |
 | `references/vmix.md` | ponte HTTP com o vMix, migração CasparCG |
 | `references/psd-to-html/` | subskill: PSD → plates + manifesto → HTML |
+| `references/psd-to-html/png-analysis.md` | quando só existe o PNG achatado: medir, olhar, descrever |
 | `references/spritesheet-mask-reveal.md` | subskill: reveal por matte de vídeo |
 
 ## O que ela defende

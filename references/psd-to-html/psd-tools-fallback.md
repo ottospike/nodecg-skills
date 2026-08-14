@@ -45,7 +45,7 @@ after.
   a designer's own PNG export: **0 differing pixels, max channel delta 0.**
 - `psd.composite(force=True)` makes psd-tools re-render everything itself, including layer
   effects — and it gets **Gradient Overlay wrong**. On a real lower-third the name's
-  `#FF3C00 → #FF0176` ramp came out compressed to a near-flat `#FF1845 → #FF2233`: 8602 differing
+  `#E24E1B → #FF0176` ramp came out compressed to a near-flat `#FF1845 → #FF2233`: 8602 differing
   pixels, max delta 58. It looked plausible, got written into the manifest, and the designer
   spotted it immediately ("parece tudo vermelho").
 
@@ -60,7 +60,7 @@ Plates themselves are still fine — geometry and plain artwork come through cor
 
 **Color Overlay has a related bug:** psd-tools applies it only to fully-opaque pixels, so the
 layer's original artwork bleeds through the antialiased edges. A notch whose Color Overlay was
-navy `#191932` shipped with a magenta fringe from the orange art underneath. Rebuild such a layer
+navy `#1E1E30` shipped with a magenta fringe from the orange art underneath. Rebuild such a layer
 by hand — take its alpha, fill it with the overlay colour:
 
 ```python
@@ -121,7 +121,7 @@ often slightly different from `transform[0]` — a 3.4% squash is invisible but 
 an optional `scaleY()`.
 
 Other things to pull from the style run: `FillColor.Values` is ARGB in 0–1 floats, not 0–255.
-`FontCaps: 2` means All Caps, so a layer whose contents read `nobruuuu` renders `NOBRUUUU` —
+`FontCaps: 2` means All Caps, so a layer whose contents read `example` renders `EXAMPLE` —
 record it or you will ship lowercase names. `Tracking` is 1/1000 em → `letter-spacing: 0.026em`.
 The font's PostScript name comes from `resource_dict["FontSet"][run["Font"]]["Name"]`.
 

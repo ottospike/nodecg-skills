@@ -1,18 +1,27 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, extração de plates de PSD via Photoshop MCP ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar") ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet.
+description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, extração de plates de PSD via Photoshop MCP ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
 ---
 
 # Bundles NodeCG para broadcast
 
-Convenções extraídas dos bundles `betano` (Show do Apelão) e `cpn`. Quando este
-documento e o bundle divergirem, o bundle manda — mas diga isso em voz alta em vez
-de seguir calado.
+Este documento é um **builder de esqueleto**: ele diz como estruturar o grafismo de
+um bundle NodeCG — onde o estado mora, como o arquivo se organiza, como a peça
+entra e sai do ar, como o operador controla. Não é sobre um programa específico.
+Cor, fonte, tipo de peça e nomenclatura de conteúdo vêm do projeto; o esqueleto é o
+mesmo em todos.
+
+Onde aparecem números concretos (uma largura útil, um limite de caracteres), eles
+são **exemplo de como a restrição se manifesta**, não valor a copiar. O que copia é
+o raciocínio: mediu, achou o limite, tratou.
 
 O contexto que explica quase toda decisão aqui: **isso roda ao vivo**. Uma browser
 source recarrega no meio do programa, o operador está apertando botão com o
 programa no ar, e um bug não dá pra "corrigir e reimplantar". Toda regra abaixo
-existe porque algum desses três já mordeu.
+existe porque algum desses três já mordeu num projeto real.
+
+Se o bundle em que você está divergir deste documento, o bundle manda — mas diga
+isso em voz alta em vez de seguir calado.
 
 ## Mapa desta skill
 
@@ -27,7 +36,8 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
-| **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os 4 docs ao lado e `scripts/*.jsx`) |
+| **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
+| **A arte veio só como PNG achatado**, sem camadas | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
 
 Os dois últimos são subskills completas: têm seu próprio fluxo, e você segue o
@@ -39,8 +49,8 @@ quando o documento se aplica.
 ## 1. Estado, nunca evento
 
 **Toda comunicação entre dashboard, graphics e extension é replicant. Inclusive
-"põe no ar" e "tira do ar".** O bundle `betano` inteiro tem zero
-`sendMessage`/`listenFor` — e isso é intencional, não esquecimento.
+"põe no ar" e "tira do ar".** Um bundle bem estruturado tem zero
+`sendMessage`/`listenFor` — isso é escolha, não esquecimento.
 
 O motivo é operacional: mensagem é um evento que passa. Se a browser source
 recarregar (ou o vMix reabrir o input, ou o operador der F5 no preview) depois que
@@ -56,10 +66,11 @@ DB_BUG.value.visivel = false;        // OUT
 DB_BUG.on("change", (s) => aplicar(!!s && s.visivel === true));
 ```
 
-O bundle `cpn`, mais antigo, usa `sendMessage`/`listenFor` com pontes `xPlayExt`
-na extension. **Não copie esse modelo para código novo** — ele é a razão de
-gráficos voltarem em branco depois de refresh. Ao tocar em `cpn`, converta o
-trecho que você está mexendo para replicant se der; se não der, registre por quê.
+Bundles mais antigos costumam usar `sendMessage`/`listenFor` com pontes
+`xPlayExt` na extension. **Não copie esse modelo para código novo** — ele é a razão
+de gráficos voltarem em branco depois de um refresh. Ao mexer num bundle assim,
+converta o trecho que você está tocando para replicant se der; se não der, registre
+por quê.
 
 Se você se pegar querendo `sendMessage`, o que você quer quase sempre é estado com
 um campo a mais (um `seq` que incrementa, um `atual` que muda).
@@ -104,8 +115,8 @@ com dois campos.
 - `fs_*` → fullscreen (`fs_pergunta.html`, `fs_contador.html`)
 - sem prefixo → peça que fica no ar por longos trechos (`bug.html`, `chat.html`)
 
-O nome descreve **a peça**, não a ficha do roteiro. "Ficha 04" muda de ordem entre
-ensaio e programa; a peça continua sendo a pergunta.
+O nome descreve **a peça**, não a posição dela no roteiro. Numeração de bloco muda
+de ordem entre ensaio e programa; a peça continua sendo o que ela mostra.
 
 **Painéis** — nome do bloco de operação, minúsculo: `quiz.html`, `lowerthirds.html`,
 `valores.html`. Agrupe por *quando o operador mexe*, não por qual gráfico é.
@@ -142,7 +153,7 @@ Campo de ar chama `visivel`:
 ```js
 { visivel: false, valor: 0 }              // DB_VALOR
 { visivel: false, nome: "", social: "" }  // DB_LTSINGLE
-{ atual: null }                           // DB_OVOS — seleção, não visibilidade
+{ atual: null }                           // DB_SELECAO — seleção, não visibilidade
 ```
 
 Escreva campo a campo (`rep.value.visivel = true`) quando só um muda. Reescreva o
@@ -325,7 +336,7 @@ a nota o próximo a mexer desfaz sem saber:
 ```json
 { "name": "valores", "title": "Valores", "file": "valores.html",
   "_width": "3 e não 4: são duas linhas de campo + PLAY/OUT; a 3 ele fecha como quarta coluna.",
-  "width": 3, "headerColor": "#0F0F23" }
+  "width": 3, "headerColor": "#0F0F23" }   // cor de fundo da arte do projeto
 ```
 
 Todo gráfico também entra em `nodecg.graphics` com `width`/`height` iguais ao
@@ -360,9 +371,9 @@ Duas armadilhas de arquivo:
 
 ## 10. Extension e a ponte vMix
 
-Extension fina de propósito. No `betano` ela faz três coisas: publica o dev mode,
-declara os dois replicants que precisam de vida de servidor, e traduz cena →
-comando HTTP pro vMix. Todo o resto está nos painéis.
+Extension fina de propósito. Num bundle bem dividido ela faz três coisas: publica o
+dev mode, declara os poucos replicants que precisam de vida de servidor, e traduz
+cena → comando HTTP pro switcher. Todo o resto está nos painéis.
 
 Ao escutar `change` para disparar efeito colateral, **ignore a primeira emissão** —
 ela é o estado inicial, não uma ordem do operador:

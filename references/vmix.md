@@ -108,7 +108,7 @@ nada pode se declarar no ar. O operador decide de novo.
 
 ## Migrando do modelo CasparCG
 
-Bundles antigos (`cpn`) seguem o modelo em que o HTML anima o próprio fade e escuta
+Bundles antigos seguem o modelo em que o HTML anima o próprio fade e escuta
 `xPlay`/`xOut`/`outAllFs`. Ao portar um gráfico:
 
 - o container passa a ser sempre `opacity: 1` — quem transiciona é o input do vMix;

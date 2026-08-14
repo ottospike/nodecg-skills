@@ -29,10 +29,18 @@ behaves over time, and what an operator would trigger. This is the single highes
 — it tells you what the plates *are*. Without it you're reverse-engineering intent from layer
 names like "Retângulo 3 copiar 2".
 
+Measure it too, don't just look — `scripts/analyze_png.py` returns the backdrop colour, the
+palette, and every block's canvas box, plus 1x/3x crops to inspect. It costs one command and
+it replaces a round of eyeballed numbers that don't add up. See `png-analysis.md`.
+
 Keep these observations; they become the overview section of `ASSETS.md` in step 5. Writing
 them down at the end from memory produces something vaguer and less useful.
 
 If there's no reference PNG, open the PSD and use `photoshop_get_preview`.
+
+**If there is no PSD at all** — only the flattened image — this workflow doesn't apply.
+Go to `png-analysis.md`: it covers measuring, describing, and being explicit about what
+can't be recovered without layers.
 
 **2. Inspect the document.** `photoshop_ping` once per session, then open the PSD.
 
@@ -109,7 +117,7 @@ $.global.OUTDIR = "C:\\...\\graphics\\assets\\LT_MetaLike";   // = nome do PSD
 $.global.SPECS = [
   { out: "plate_question", keep: [[1,1],[1,2]], note: "question panel, no text" },
   { out: "answer_a_win",   keep: [[2,16],[2,10],[2,8]],
-    recolor: [{ path:[2,16], hex:"#FF3C00" }],
+    recolor: [{ path:[2,16], hex:"#E24E1B" }],
     lift:    [[2,10],[2,8]],
     shift:   [{ path:[2,8], dx:-633, dy:0 }],
     clip:    { art:[2,14], base:[2,16], dx:-639, dy:0 },
@@ -168,7 +176,7 @@ canvas:
   "track": "meta_track.png",
   "fillBox": { "x": 4, "y": 6, "w": 420, "h": 92 },
   "direction": "ltr",
-  "gradient": "linear-gradient(90deg, #FF3C00 0%, #FF0078 100%)",
+  "gradient": "linear-gradient(90deg, #E24E1B 0%, #C81E5A 100%)",
   "cap": { "file": "meta_cap.png", "w": 47, "h": 104 },
   "max": 5000
 }
@@ -195,6 +203,9 @@ not the samples.
 
 ## Reference files
 
+- `png-analysis.md` — **the no-PSD path**, and the measuring step for the PSD path. How to
+  run `analyze_png.py`, how to read what it returns, what it can't see, and how to write the
+  descriptive markdown — including the section listing what must be requested from the designer.
 - `bundle-conventions.md` — **read before deciding the plates.** What a lower third, a
   fullscreen (two flavours — switcher input vs. HTML-built) and a meter each need from the
   extraction, where the files live in the bundle, what must *not* be baked into a plate, and

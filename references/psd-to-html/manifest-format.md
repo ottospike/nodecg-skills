@@ -24,19 +24,19 @@ graphics/assets/L3_Pergunta/
   "canvas": { "w": 1920, "h": 1080 },
 
   "palette": {
-    "navyRow1": "#0F0F23",
-    "navyRow2": "#272740",
-    "orange":   "#FF3C00",
+    "rowTop": "#12121E",
+    "rowBottom": "#26263A",
+    "accent":   "#E24E1B",
     "white":    "#FFFFFF"
   },
 
   "fonts": {
-    "body":    { "family": "Haffer", "psName": "Haffer-Medium",   "weight": 500 },
-    "emphasis":{ "family": "Haffer", "psName": "Haffer-SemiBold", "weight": 600 }
+    "body":    { "family": "Inter", "psName": "Inter-Medium",   "weight": 500 },
+    "emphasis":{ "family": "Inter", "psName": "Inter-SemiBold", "weight": 600 }
   },
 
   "gradients": {
-    "meterFill": "linear-gradient(90deg, #FF3C00 0%, #FF0078 100%)"
+    "meterFill": "linear-gradient(90deg, #E24E1B 0%, #C81E5A 100%)"
   },
 
   "plates": [
@@ -121,7 +121,7 @@ never changes, so nothing reflows.
 **`font`** points into the `fonts` map rather than repeating the family everywhere — when the
 real font file turns up later, one edit fixes every field.
 
-**Record the PostScript name** (`Haffer-SemiBold`), not just "semibold". It's what identifies
+**Record the PostScript name** (`Inter-SemiBold`), not just "semibold". It's what identifies
 the actual file, and PSDs regularly mix optical sizes that look identical in a mockup.
 
 ## ASSETS.md
@@ -184,14 +184,14 @@ Labels over ~533px will overflow.
 
 | Token | Hex | Used by |
 |---|---|---|
-| `navyRow1` | `#0F0F23` | answer plates, top row |
-| `orange` | `#FF3C00` | win state, badge ring |
+| `rowTop` | `#12121E` | answer plates, top row |
+| `accent` | `#E24E1B` | win state, badge ring |
 
 ## Gradients
 
 | Token | CSS |
 |---|---|
-| `meterFill` | `linear-gradient(90deg, #FF3C00 0%, #FF0078 100%)` |
+| `meterFill` | `linear-gradient(90deg, #E24E1B 0%, #C81E5A 100%)` |
 
 Record the CSS string **and** the evidence that it's right: the descriptor values, plus what you
 measured out of the designer's flattened PNG at a few positions along the ramp. A gradient is the
@@ -204,11 +204,11 @@ and that is the opposite of most people's intuition.
 
 | Element | Font (PostScript) | Size | Color | Align |
 |---|---|---|---|---|
-| Question | `Haffer-Medium` | 31px | `#FFFFFF` | center, max 2 lines |
-| Answer label | `Haffer-Medium` | 31px | `#FFFFFF` | left |
-| Answer label (win) | `Haffer-SemiBold` | 31px | `#FFFFFF` | left |
+| Question | `Inter-Medium` | 31px | `#FFFFFF` | center, max 2 lines |
+| Answer label | `Inter-Medium` | 31px | `#FFFFFF` | left |
+| Answer label (win) | `Inter-SemiBold` | 31px | `#FFFFFF` | left |
 
-> Font files not in the repo — falling back to Outfit until the Haffer `.otf`s arrive.
+> Font files not in the repo — falling back to a system sans until the `.otf`s arrive.
 
 ## Dynamic fields
 
@@ -221,7 +221,7 @@ and that is the opposite of most people's intuition.
 ## States
 
 `answer_{a,b,c,d}` each ship `normal` and `correct`. The PSD only drew the win state on slot B;
-the rest were synthesized by recoloring the plate fill to `#FF3C00` and re-clipping the
+the rest were synthesized by recoloring the plate fill to `#E24E1B` and re-clipping the
 lightning texture over it. Slot B's neutral version came from the reverse operation.
 
 ## CSS scaffold

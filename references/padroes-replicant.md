@@ -1,6 +1,6 @@
 # Padrões de replicant recorrentes
 
-Catálogo dos padrões já resolvidos no bundle. Antes de inventar um jeito novo de
+Catálogo dos padrões de estado já resolvidos em bundles reais. Antes de inventar um jeito novo de
 guardar estado, veja se o caso é um destes.
 
 ## 1. Liga/desliga simples
@@ -123,14 +123,14 @@ bater com o do NodeCG.
 
 ## 5. Seleção exclusiva
 
-Grade de peças irmãs (ovos, explicações, cenas): um campo `atual`, não um booleano
+Grade de peças irmãs (variantes de uma mesma arte, cenas, slots): um campo `atual`, não um booleano
 por peça.
 
 ```js
-const DB_OVOS = nodecg.Replicant("DB_OVOS", { defaultValue: { atual: null } });
+const DB_SELECAO = nodecg.Replicant("DB_SELECAO", { defaultValue: { atual: null } });
 
 bt.addEventListener("click", () => {
-  DB_OVOS.value.atual = DB_OVOS.value.atual === cor ? null : cor;  // toggle
+  DB_SELECAO.value.atual = DB_SELECAO.value.atual === cor ? null : cor;  // toggle
 });
 ```
 

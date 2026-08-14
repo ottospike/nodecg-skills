@@ -1,7 +1,7 @@
 # O que cada tipo de gráfico precisa da extração
 
 Ponte entre `README.md` (como extrair de um PSD) e o SKILL.md do `nodecg` (como
-construir a peça). Tudo aqui saiu de gráficos que foram ao ar no bundle `betano` —
+construir a peça). Tudo aqui saiu de gráficos que foram ao ar —
 e boa parte de erro que só apareceu depois da primeira exportação.
 
 Leia a seção do tipo de peça **antes** de decidir os plates. A decisão errada aqui
@@ -64,7 +64,7 @@ Logo, zigue-zague, entalhe, rótulos fixos: dentro da plate. Menos elemento vivo
 menos bug de alinhamento, e a tipografia estática fica exatamente como desenhada.
 
 **A armadilha é o inverso**, e ela custou uma revisão inteira: o que precisa mudar
-de estado **tem que sair da plate**. No card do Show do Apelão o badge A/B/C/D
+de estado **tem que sair da plate**. Num card de quiz o badge A/B/C/D
 estava queimado na barra — e aí não havia como preencher o círculo de laranja
 quando o participante marcasse a alternativa. As 8 barras tiveram que ser
 reexportadas como "só a faixa colorida", com o badge redesenhado em CSS.
@@ -102,7 +102,7 @@ Point text não define span nenhum — o Photoshop só reporta a bbox do placeho
 Derive o span da geometria da plate: largura total menos o offset do texto menos o
 respiro da borda chanfrada. Diga no `ASSETS.md` que é derivado, não medido.
 
-E registre o aperto: no LT Single a barra tem 241px úteis e o nome de exemplo do
+E registre o aperto: num LT de nome a barra tinha 241px úteis e o nome de exemplo do
 designer (8 caracteres) já ocupa 239. Esse número é o que faz o gráfico saber que
 precisa de auto-fit e onde é o piso.
 
@@ -140,16 +140,16 @@ HTML anima entrada de fullscreen.
 Entrega:
 
 - **um PNG de frame cheio, 1920×1080, opaco**, com tudo queimado: fundo, padrão,
-  grafites, logos, rótulo, aviso 18+. Não recorte em plates — recorte não ajuda
+  logos, rótulo, selos fixos. Não recorte em plates — recorte não ajuda
   quem vai montar um input no switcher.
-- uma variante `_no_label` se a chamada pode mudar no ar ("VOLTAMOS EM",
-  "PRÓXIMA QUEDA EM").
+- uma variante `_no_label` se a chamada escrita pode mudar no ar (o mesmo fundo
+  servindo "COMEÇA EM", "VOLTAMOS EM", e o que mais o roteiro pedir).
 - a browser source que vai **por cima** é transparente e contém só o campo vivo
   (o contador). Só isso.
 - `_reference.png` = flatten integral com o valor de exemplo queimado. Não vai ao
   ar; é a régua de calibração.
 
-**Tire marcador de designer do plate — e diga que tirou.** No FS_Contador havia um
+**Tire marcador de designer do plate — e diga que tirou.** Num fullscreen de contagem havia um
 retângulo 16:9 com contorno laranja sangrando fora do canvas: slot de câmera ou
 sobra de artboard, não arte. Saiu do `bg.png`, ficou só no `_reference.png`, e o
 `ASSETS.md` pergunta explicitamente se era pra ser área de vídeo.
@@ -220,7 +220,7 @@ geometria.
 
 | Registre | Porque |
 |---|---|
-| Família + corte PostScript + **peso CSS correspondente** | `Haffer-Medium` → `font-weight: 500`. Omitir o peso entrega a Regular. |
+| Família + corte PostScript + **peso CSS correspondente** | `Inter-Medium` → `font-weight: 500`. Omitir o peso entrega a Regular. |
 | Se cada corte existe como face real no `shared/fontes.css` | pedir 600 numa família que só tem Medium engorda o glifo e o layout deixa de bater |
 | Tamanho **derivado** (`FontSize × escala do transform`), conferido com os advance widths | o número que o PSD reporta não é o corpo renderizado |
 | Baseline + a conta do `top` + se tem `USE_TYPO_METRICS` | é o que torna a posição reprodutível |

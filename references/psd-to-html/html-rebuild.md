@@ -51,7 +51,7 @@ glyph bounds and don't include the leading the design implies:
 
 Load the design's real fonts with `@font-face` and `font-display: swap`. Two things bite here:
 font filenames containing spaces fail to load over a NodeCG-style URL (rename to no-space), and
-a PostScript name like `Haffer-SemiBold` is a *separate file*, not `font-weight: 600` applied to
+a PostScript name like `Inter-SemiBold` is a *separate file*, not `font-weight: 600` applied to
 the regular. If you only have the regular, say so in the manifest rather than faking the weight
 — synthetic bold shifts glyph widths and the layout stops matching the mockup.
 
@@ -81,7 +81,7 @@ percentage. Because `fillBox` is plate-local, the percentage resolves against th
 .fill {
   position: absolute; inset: 0;
   width: var(--pct, 0%);
-  background: linear-gradient(90deg, #FF3C00 0%, #FF0078 100%);
+  background: linear-gradient(90deg, #E24E1B 0%, #C81E5A 100%);
   transition: width .6s cubic-bezier(.22,1,.36,1);
 }
 .cap { position: absolute; top: 0; height: 100%; left: var(--pct, 0%); transform: translateX(-100%); }
