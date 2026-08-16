@@ -49,12 +49,19 @@ borda e o alvo de clique fica pequeno pra quem opera com o programa no ar.
 | Classe | Uso |
 |---|---|
 | `.bt` | base |
-| `.bt-play` | verde — põe no ar / confirma |
+| `.bt-play` | põe no ar / confirma — leva a **cor de ação primária da arte** (verde num projeto neutro, amarelo num Brawl Stars) |
 | `.bt-out` | vermelho — tira do ar |
 | `.bt-setar` | não estica: fica do tamanho da palavra, ao lado do campo |
 | `.bt-cena` + `.on` | cena de fullscreen; `.on` = a que foi acionada |
 | `.bt-mark` + `.on` | marcação toggle (alternativa escolhida) |
 | `.bt-reveal` | revelar resposta |
+
+**PLAY leva a cor primária da arte, e SETAR não pode levar a mesma.** Pôr no ar é
+a ação primária do dashboard, então é PLAY que merece o tratamento cheio (bisel,
+cor de marca) — é o botão que o operador procura com o olho. Se SETAR usar a
+mesma cor, os dois disputam o mesmo olhar e o operador aperta SETAR achando que
+está pondo no ar. SETAR fica neutro com um fio da cor primária: legível como
+ação, sem competir.
 | `.bt-avancar` / `.bt-voltar` | verde subiu / vermelho desfez — mesma linguagem do PLAY/OUT |
 | `.bt-ovo` / `.bt-explic` + `.on` | grade de peças irmãs; a acesa é a que está no ar |
 

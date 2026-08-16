@@ -1,0 +1,5 @@
+# Bytecode do Python: é gerado na primeira execução de analyze_png.py e é
+# específico da versão do interpretador (cpython-312). Versionado, ele viaja
+# para máquinas que rodam outra versão e não serve para nada lá.
+__pycache__/
+*.pyc

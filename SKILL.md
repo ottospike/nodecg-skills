@@ -32,12 +32,13 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 |---|---|
 | Começando um gráfico novo | `assets/grafico-modelo.html` |
 | Começando um painel novo | `assets/painel-modelo.html` |
+| **"Mudei no painel e o gráfico não atualiza"** | §4 (Como escrever) e o checklist final |
 | Animando entrada/saída, troca de conteúdo, stagger | `references/animacao-gsap.md` |
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
 | **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
-| **A arte veio só como PNG achatado**, sem camadas | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
+| **A arte veio só como PNG achatado** ou como frame de transmissão, sem camadas — inclusive vários frames da mesma peça | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
 
 Os dois últimos são subskills completas: têm seu próprio fluxo, e você segue o
@@ -109,6 +110,15 @@ sozinha. Duas peças que precisam estar no ar ao mesmo tempo com conteúdos
 diferentes são **dois replicants** (`DB_VALOR` e `DB_VALOR_CHAT`) — não um objeto
 com dois campos.
 
+**Duas peças nunca são um campo `modo`.** A tentação aparece quando elas
+compartilham a arte: "é a mesma barra, só muda o miolo". Um `modo: "a" | "b"` num
+gráfico só custa duas coisas caras. No ar, o PLAY de um modo acende junto tudo
+que já estiver preenchido do outro — e num draft os dados chegam *antes* da peça
+entrar, então isso é o caso normal, não a borda. Na operação, um arquivo é **um
+input no vMix**: com um só, não existe cena de A e cena de B para cortar entre
+elas. Se as duas entram e saem sozinhas, são dois arquivos e dois replicants,
+mesmo que 80% do CSS se repita.
+
 **Arquivos de gráfico** — snake_case, com prefixo por tipo de entrada:
 
 - `lt_*` → lower third, entra/sai por animação própria (`lt_single.html`)
@@ -156,14 +166,59 @@ Campo de ar chama `visivel`:
 { atual: null }                           // DB_SELECAO — seleção, não visibilidade
 ```
 
-Escreva campo a campo (`rep.value.visivel = true`) quando só um muda. Reescreva o
-objeto inteiro quando o estado muda de *modo* — e nesse caso **carregue adiante os
-campos que não mudaram**. (No contador, esquecer o `inicial` no PAUSE fazia o RESET
-"resetar" pro tempo pausado.)
+### Como escrever
 
-**`persistent: false`** para tudo que não pode acordar no ar depois de um restart:
-cena de fullscreen, dev mode. **Persistente** (o default) para o que precisa
-reentrar onde estava: o relógio.
+Campo a campo (`rep.value.visivel = true`) só vale para campo de **primeiro
+nível**. Para qualquer outra coisa, **reescreva o objeto carregando adiante os
+campos que não mudaram**. Três regras, e as três custaram bug no ar:
+
+**1. Escrita aninhada não notifica de forma confiável.** `rep.value.placar.a = 2`
+depende do proxy profundo pegar a mutação, e quando ele não pega o gráfico
+simplesmente não redesenha — sem erro, sem log. Reatribua:
+
+```js
+rep.value = { ...v, placar: { ...v.placar, a: 2 } };   // sempre notifica
+```
+
+**2. Um handler, UMA escrita.** Atribuir a um replicant no cliente é
+**assíncrono**: `rep.value = x` propõe ao servidor e o valor local só muda quando
+ele devolve. Duas escritas no mesmo handler leem o *mesmo valor velho*, e a
+segunda apaga os campos da primeira.
+
+```js
+// ERRADO — a barra não entra no ar, mas o relógio começa a andar
+rep.value = { ...rep.value, visivel: true };
+irParaFase(0);      // relê (ainda visivel:false) e regrava por cima
+
+// CERTO — funções de estado CALCULAM campos; o handler escreve uma vez
+const v = rep.value;
+rep.value = { ...v, visivel: true, ...camposDaFase(v, 0) };
+```
+
+O sintoma é traiçoeiro: parte do estado chega e parte não, então parece bug de
+renderização. Se uma função auxiliar escreve replicant, chamá-la **é** uma
+escrita — parta em `calcularX()` (puro) e `aplicarX()` (escreve).
+
+**3. Carregue adiante o que não mudou.** No contador, esquecer o `inicial` no
+PAUSE fazia o RESET "resetar" pro tempo pausado.
+
+### Persistência: dado persiste, ar nunca persiste
+
+**`defaultValue` só vale quando NÃO existe valor persistido.** Um
+`visivel: false` no default de um replicant persistente **não protege nada**: se
+o servidor cair com a peça no ar, ela volta no ar sozinha no boot.
+
+Quando a mesma peça tem dado preparado (que precisa sobreviver) e ar (que não
+pode), são **dois replicants**, divididos por *tempo de vida*:
+
+```js
+const DB_MAPPICKS    = nodecg.Replicant("DB_MAPPICKS",    { defaultValue: { mapas: [...] } });
+const DB_MAPPICKS_AR = nodecg.Replicant("DB_MAPPICKS_AR", { defaultValue: { visivel: false }, persistent: false });
+```
+
+Um fullscreen reaparecendo sozinho por cima do programa é inaceitável. Para uma
+barra de trecho longo, voltar acesa depois de uma queda pode ser o que a produção
+quer — mas isso é **decisão explícita e comentada**, nunca acidente.
 
 **Nada de replicant tickado.** Relógio guarda um *prazo* (`fimEm`, epoch ms) e cada
 tela calcula o restante sozinha. Escrever um replicant por segundo enche o socket,
@@ -227,6 +282,23 @@ Template completo em `assets/grafico-modelo.html`. As seis invariantes:
 5. `window.test(...)` no fim do script — ensaiar a peça no navegador sem depender
    do painel. É o que torna a peça verificável por render headless.
 6. `<link rel="stylesheet" href="shared/fontes.css" />` no head.
+7. **Uma fonte ausente nunca derruba a outra.** Quando a peça combina dois
+   replicants (o dado e o ar, o draft e o confronto), `combinar()` desenha com o
+   que tiver:
+
+   ```js
+   function combinar() {
+     var d = draftAtual   || {};   // NUNCA `if (!draftAtual) return;`
+     var p = partidaAtual || {};
+     aplicarDados({ ...d, placar: p.placar || { a: 0, b: 0 } });
+   }
+   ```
+
+   O `return` cedo parece defensivo e é o oposto: como cada replicant é declarado
+   no painel dele, e painéis moram em **workspaces diferentes**, basta o operador
+   estar com uma aba aberta e a outra não para uma fonte ficar `undefined` — e aí
+   o guard derruba junto tudo que a outra fonte trouxe. O sintoma aparece longe da
+   causa: "o placar não atualiza" quando o problema é o painel de draft fechado.
 
 **Nunca um `<img>` cru no ar.** Toda imagem que pode faltar (foto de jogador, logo
 de time) carrega com fallback:
@@ -419,11 +491,145 @@ sobrando, explicando o efeito no ar.
 
 ---
 
+## 12. A tela de dev
+
+Todo gráfico carrega um `<div id="dev">` que só aparece com `?dev=1` (o
+`devmode.js` põe a classe `.dev` no stage). **Nunca no ar** — e é justamente por
+isso que ele pode ser prolixo.
+
+Ele existe porque ao vivo você não tem console: a peça está numa browser source
+dentro do vMix, e "não atualizou" é tudo que o operador consegue relatar. A tela
+de dev transforma isso em diagnóstico numa olhada.
+
+```js
+var diag = { noAr: false, placar: "—", primeiro: "—", picks: 0, faltando: [] };
+
+function pintarDiag() {
+  var st = document.querySelector(".stage");
+  if (!st || !st.classList.contains("dev")) return;   // sai cedo: custo zero no ar
+  devEl.textContent =
+    "no ar: " + diag.noAr +
+    "\nplacar: " + diag.placar +
+    "\npicks fechados: " + diag.picks + "/6" +
+    "\nsem imagem: " + (diag.faltando.length ? diag.faltando.join(", ") : "—");
+}
+```
+
+O que faz a diferença entre um dump inútil e uma ferramenta:
+
+- **Mostre o que foi DESENHADO, não o que chegou no estado.** `placar: 2-0` lido
+  do `textContent` que a peça acabou de escrever responde "o painel mandou e a
+  peça pintou?" — que é a pergunta real. Ecoar o replicant só prova que o socket
+  funciona.
+- **Uma linha por pergunta que você já fez ao vivo.** `no ar`, quem está no
+  relógio, quantos segundos faltam, quantos assets faltaram. Se um campo nunca
+  respondeu nada, tire.
+- **Assets que faltaram, por nome.** É o defeito mais comum e o mais invisível:
+  sem isso, um retrato ausente é só um buraco no layout.
+- **Atualize junto com o desenho.** `pintarDiag()` no fim de `aplicarDados()` e
+  de cada transição de ar. Painel de dev que mente é pior que não ter.
+- **Um campo órfão é dívida.** Quando removi o modo `global` da barra, `diag.modo`
+  ficou mostrando um valor congelado. Ao apagar um estado, apague a linha dele —
+  ou troque por outra que hoje importa mais.
+
+Vale o mesmo para o painel: o `.status` de um bloco é a tela de dev do operador,
+e a regra é a inversa — **só escreva o que os botões não dizem**.
+
+---
+
+## Subir o NodeCG: `start` e `dev`
+
+Dois scripts, e a diferença entre eles é o dev mode:
+
+```json
+"start": "node index.js",
+"dev":   "node --watch-path=bundles/<bundle>/extension --watch-path=cfg dev.cjs",
+"dev:sem-watch": "node dev.cjs"
+```
+
+`dev.cjs` é um launcher de duas linhas — `process.env.NODECG_DEV = "1"` e depois
+`require("./index.js")`. Existe como **arquivo** e não como `NODECG_DEV=1 node
+index.js` no script porque essa sintaxe é de shell POSIX: no `cmd.exe` ela não
+define variável nenhuma e o NodeCG sobe com o dev mode desligado **sem avisar**.
+Um launcher em Node funciona igual no cmd, no PowerShell e no bash, sem
+`cross-env`.
+
+**Não use nodemon.** Foi testado num projeto com `[colchetes]` no caminho e
+falha em silêncio: o chokidar trata `[...]` como classe de caracteres de glob, o
+padrão casa com nada, e o nodemon anuncia `watching path(s): bundles\*\extension`
+e nunca reinicia. Medido: **0 restarts com nodemon, 3 com `--watch-path`**, no
+mesmo teste. O `--watch-path` usa `fs.watch`, sem glob, então colchete é só um
+caractere.
+
+**Observe só o que exige restart de servidor** — `extension/` e `cfg/`.
+`dashboard/` e `graphics/` ficam de fora de propósito: editar HTML de painel ou
+de gráfico só pede hard-refresh do navegador. Um watch que reinicia o servidor a
+cada tweak de CSS derruba todas as browser sources abertas — fica mais lento, e é
+um jeito ótimo de tirar um gráfico do ar sem querer durante um ensaio. Bundle
+novo = mais um `--watch-path`; o flag não aceita glob, e apontar para `bundles`
+inteiro arrastaria a pasta de assets junto.
+
+**`ENOENT ... access 'graphics/<peça>.html'` durante uma edição é ruído, não
+defeito.** O `bundle-manager` do NodeCG tem watcher próprio (independente do
+`--watch-path`) e, ao ver mudança, espera um instante e re-parseia o bundle
+inteiro, fazendo `accessSync` em cada gráfico do `package.json`. Se o timer dele
+cair no milissegundo em que o editor está substituindo o arquivo, o `access`
+falha:
+
+```
+warn: [bundle-manager] Unable to handle the bundle "brawlstars" change:
+Error: ENOENT: no such file or directory, access '...\graphics\draft.html'
+    at Timeout._onTimeout (...bootstrap.js:2446:9)
+```
+
+Antes de investigar, confira que o arquivo existe e fecha (`</html>`) — quase
+sempre existe. O efeito real é que **aquele reload foi descartado e o servidor
+seguiu com a versão anterior em memória**, então o que você acabou de escrever
+pode não estar valendo. Restart resolve. O `Timeout._onTimeout` no stack é a
+assinatura: é o debounce do watcher, não um require do seu código.
+
+### O que o dev mode liga
+
+`DB_DEVMODE` é **booleano puro**, publicado pela extension, `persistent: false`
+(se persistisse, a primeira peça a entrar no ar depois de um restart entraria com
+a régua por cima). O `shared/devmode.js` reage ligando três coisas:
+
+1. **Fundo `#3C3C3C`** no body. Browser source é transparente, e transparente no
+   navegador é indistinguível de "a peça não carregou" — os dois são branco. Com
+   o cinza dá pra ver a silhueta real, conferir o alfa das plates e notar na hora
+   se algo desenha fora do lugar. Cinza **médio**: sobre branco o contorno preto
+   some, sobre preto somem as sombras. Guarde o fundo original e devolva ao
+   desligar — fundo cinza esquecido no ar cobre o programa.
+2. **Classe `.dev` no `.stage`**, que é o gancho para cada peça mostrar o próprio
+   diagnóstico (`.stage.dev #dev { display: block }`). O que conferir é da peça:
+   texto medido, tamanho de fonte após auto-fit, se estourou o piso, qual imagem
+   não resolveu.
+3. **Régua**: contorno do canvas, linha de centro em `x=960` e grade de 120px.
+
+Para ensaiar uma peça isolada sem NodeCG rodando, `?dev=1` na URL do gráfico
+vence tudo.
+
 ## Ambiente Windows
 
 O caminho deste projeto tem `[colchetes]`, que o PowerShell e o chokidar tratam
 como glob. Use o Bash tool, `cmd /c mklink /J` para junções, `node -e` para leituras
 e `Test-Path -LiteralPath`; evite `New-Item -Path` com caminho entre colchetes.
+
+**Junção nunca dentro de `bundles/`.** O NodeCG trata toda pasta ali como bundle
+e exige `package.json`; qualquer outra coisa derruba o servidor no boot com
+`ENOENT: ...\<pasta>\package.json`. Pastas com ponto (`.claude`) ele pula. Se
+precisar de uma junção de notas ou docs, ela vai na raiz do projeto, fora de
+`nodecg/`. Para remover junção sem apagar o alvo: `cmd /c rmdir` ou
+`[System.IO.Directory]::Delete($p, $false)` — `Remove-Item -Recurse` do PS 5.1
+pode seguir o link e apagar o conteúdo real.
+
+**Asset fora dos três diretórios servidos não existe por HTTP.** O NodeCG serve
+só `dashboard/`, `graphics/` e `shared/` de um bundle. Uma pasta `assets/` na raiz
+do bundle dá 404 na browser source. Ponte que funciona sem duplicar arquivo:
+junção `shared/assets` → `../assets`. Ela passa porque o `isChildPath` do NodeCG
+compara **string** no caminho não-resolvido e o `res.sendFile` segue o link no
+filesystem. A junção **não sobrevive** a copiar/zipar o bundle — recrie na
+máquina nova.
 
 Dimensão real de um PNG sem abrir nada:
 
@@ -442,9 +648,11 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] `shared/fontes.css` linkado; pesos reais, sem síntese
 - [ ] replicant lido sem `defaultValue`, tolerando `undefined`
 - [ ] trava de primeiro estado e trava de on-air
+- [ ] combina duas fontes? nenhuma delas derruba a outra por `return` cedo
 - [ ] GSAP vendorizado local; timeline de entrada reseta o estado inicial dos filhos
 - [ ] `fit.js` + `devmode.js` no fim do body
 - [ ] `window.test()` funcionando
+- [ ] tela de dev mostra o que foi DESENHADO, sem campo órfão de estado removido
 - [ ] imagem com fallback; auto-fit onde o texto pode estourar, com piso e `log.warn`
 - [ ] geometria conferida contra `assets/<peça>/assets.json`
 - [ ] restart do NodeCG (mexeu no package.json) e URL da browser source apontada
@@ -455,6 +663,9 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] blocos em `.sechd` / `.campo` / `.barra` / `.status`
 - [ ] PLAY/OUT desabilitados conforme o ar; SETAR desabilitado quando limpo
 - [ ] replicants declarados aqui com `defaultValue` (não na extension)
+- [ ] **uma escrita de replicant por handler** — função auxiliar que escreve conta como escrita
+- [ ] nada de escrita aninhada (`rep.value.a.b = x`); reatribui o objeto
+- [ ] dado preparado persiste, ar não persiste (dois replicants se a peça tem os dois)
 - [ ] não sobrescreve campo em foco
 - [ ] `.status` só onde acrescenta
 
@@ -462,5 +673,17 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] recarreguei a browser source com a peça no ar e ela voltou igual, sem re-animar
 - [ ] pus no ar, tirei e pus de novo — a segunda entrada animou igual à primeira
 - [ ] reiniciei o NodeCG e nada se declarou no ar sozinho
+- [ ] abri o gráfico com **só um** dos painéis carregado — ele ainda desenha o que tem
 - [ ] `node --check` na extension, se mexi nela
 - [ ] os comentários explicam os números e as decisões descartadas
+
+**Quando "não atualiza"** — a ordem que economiza tempo, das causas mais comuns
+para as mais raras. Todas já aconteceram:
+
+1. O handler faz **duas escritas** e a segunda apagou a primeira? (parte do
+   estado chega, parte não — o sintoma parece de renderização)
+2. É **escrita aninhada** (`rep.value.a.b = x`)? Reatribua o objeto.
+3. O gráfico tem `return` cedo por uma **fonte ausente** que nem é a que mudou?
+4. O evento é `change` num `<input type="number">`? Ele só dispara no blur.
+5. O `bundle-manager` engoliu o reload com um `ENOENT` e o servidor está com a
+   versão antiga em memória?
