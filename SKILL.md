@@ -662,6 +662,8 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] linka o CSS do dashboard; zero CSS próprio
 - [ ] blocos em `.sechd` / `.campo` / `.barra` / `.status`
 - [ ] PLAY/OUT desabilitados conforme o ar; SETAR desabilitado quando limpo
+- [ ] **o painel sobe sem rede**: montar linhas e assinar replicant fora de qualquer promise
+- [ ] toda promise de asset tem `.catch` com `nodecg.log.error`
 - [ ] replicants declarados aqui com `defaultValue` (não na extension)
 - [ ] **uma escrita de replicant por handler** — função auxiliar que escreve conta como escrita
 - [ ] nada de escrita aninhada (`rep.value.a.b = x`); reatribui o objeto
@@ -676,6 +678,27 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] abri o gráfico com **só um** dos painéis carregado — ele ainda desenha o que tem
 - [ ] `node --check` na extension, se mexi nela
 - [ ] os comentários explicam os números e as decisões descartadas
+
+**O painel sobe sem rede.** Montar as linhas e assinar os replicants **nunca**
+mora dentro de `BS.carregar().then(...)` — nada disso precisa de manifest. Só o
+que se alimenta do asset (um `<datalist>`, um `<select>` de mapa) espera, e com
+`.catch` obrigatório:
+
+```js
+montarLinhas();
+DB_X.on("change", pintar);
+pintar();                                  // ← o painel já está vivo aqui
+
+BS.carregar()
+  .then(encherDatalist)                    // só o enfeite espera a rede
+  .catch((e) => nodecg.log.error("Manifests não carregaram:", e));
+```
+
+Com tudo lá dentro, qualquer tropeço no carregamento mata o painel INTEIRO em
+silêncio — as linhas nem aparecem, `pintar` nunca é assinado, e o operador vê
+badges vazios e botões que não respondem. Um `.then()` sem `.catch()` engole a
+rejeição, então nem no console aparece. Degradar é aceitável (digitar o nome à
+mão); morrer sem avisar, não.
 
 **Quando "não atualiza"** — a ordem que economiza tempo, das causas mais comuns
 para as mais raras. Todas já aconteceram:
