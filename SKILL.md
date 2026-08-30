@@ -1,6 +1,6 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
+description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
 ---
 
 # Bundles NodeCG para broadcast
@@ -37,6 +37,7 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
+| **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
 | **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
 | **A arte veio só como PNG achatado** ou como frame de transmissão, sem camadas — inclusive vários frames da mesma peça | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
@@ -648,6 +649,12 @@ a régua por cima). O `shared/devmode.js` reage ligando três coisas:
 
 Para ensaiar uma peça isolada sem NodeCG rodando, `?dev=1` na URL do gráfico
 vence tudo.
+
+### E em produção
+
+`start` e `dev` sobem a instalação **na máquina de quem está editando**. Pôr a mesma
+instalação num servidor — imagem Docker, volume pro banco de replicants, domínio,
+login — é outro assunto, com armadilhas próprias: `references/deploy.md`.
 
 ## Ambiente Windows
 
