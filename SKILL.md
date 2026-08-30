@@ -1,6 +1,6 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, extração de plates de PSD via Photoshop MCP ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
+description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
 ---
 
 # Bundles NodeCG para broadcast
@@ -472,6 +472,46 @@ máquina sem o software. Nomes que precisam bater letra por letra com outro sist
 Detalhes da ponte — helpers HTTP, `Restart`+`Play` para mídia, canais de overlay,
 migração CasparCG→vMix — em `references/vmix.md`.
 
+### O bundle é hóspede na API dos outros
+
+Quando o dado vem de um serviço que **não é deste bundle** (um servidor de stats,
+um placar, uma API de torneio), a regra é uma só:
+
+> **Leia. Nunca configure.** Se para o bundle funcionar você precisou gravar
+> alguma coisa no outro sistema, você escolheu a rota errada.
+
+Quase toda API desse tipo tem os dois tipos de rota, e elas se parecem:
+
+| Rota | O que faz | Serve? |
+|---|---|---|
+| `GET /stats?channels=a,b` | responde sobre o que **você passou na chamada** | **sim** |
+| `GET /chat/<plat>/<canal>` | stream do que **você pediu no path** | **sim** |
+| `GET /api/stats` | responde sobre o que **o painel de lá tem ligado** | não |
+| `POST /api/channels` | **edita** o painel de lá | nunca |
+
+A rota que aceita os alvos na própria chamada é a rota de consumidor. A que não
+aceita está te dizendo que ela serve ao painel dela, não a você.
+
+Por que isso é regra e não preferência: aquele painel é de outra pessoa e
+costuma alimentar outros overlays que já estão no ar. Ligar um canal lá para o
+seu gráfico somar muda o número **do overlay dos outros** — e o seu bundle passa
+a depender de um estado que qualquer um pode mudar sem saber que você existe. O
+custo aparece na pior hora: alguém desliga um canal no painel e a sua peça zera
+no meio do programa, sem log e sem causa aparente.
+
+Então a lista de alvos é **estado do bundle** — um replicant na extension,
+editado num painel do próprio dashboard — e cada chamada carrega essa lista.
+Assim o bundle sobe sozinho, em qualquer instalação, sem preparo do outro lado.
+
+Antes de escrever a primeira linha de integração, **leia a documentação da API
+inteira** (`/docs.json`, `/openapi.json`, a página de docs) e liste as rotas de
+leitura on-demand. Escolher a rota errada não dá erro — dá um bundle que só
+funciona na sua máquina.
+
+E ao mexer num serviço de terceiro para testar: se você gravou alguma coisa,
+**desfaça e confira o estado final** contra o que era antes. Diga o que mudou e o
+que não deu para restaurar.
+
 ---
 
 ## 11. Como comentar
@@ -672,6 +712,12 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] `.status` só onde acrescenta
 
 **Antes de dizer que está pronto**
+- [ ] **o repo está limpo**: screenshot, dump, venv e script de conferência foram
+      para o scratchpad, não para dentro do bundle. Ferramenta que grava por
+      caminho relativo (o screenshot do Playwright, por exemplo) escreve no cwd —
+      passe caminho absoluto do scratchpad, e confira com `git status` /
+      `find . -newermt` antes de encerrar. Um `.playwright-mcp/` esquecido dentro
+      de `bundles/` é pasta sem `package.json`: derruba o NodeCG no próximo boot
 - [ ] recarreguei a browser source com a peça no ar e ela voltou igual, sem re-animar
 - [ ] pus no ar, tirei e pus de novo — a segunda entrada animou igual à primeira
 - [ ] reiniciei o NodeCG e nada se declarou no ar sozinho

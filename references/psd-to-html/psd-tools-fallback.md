@@ -1,6 +1,7 @@
 # Fallback: extracting without Photoshop
 
-The Photoshop MCP is the primary path, but it can be dead in ways that look like success — see
+The MCP bridge is the primary path — Photopea by default, Photoshop as the alternative — but it
+can be dead in ways that look like success — see
 [Is the bridge actually working?](#is-the-bridge-actually-working). When it is, drive everything
 from Python with **psd-tools**: it is read-only, deterministic, never touches the user's open
 documents, and on a well-behaved PSD it reproduces Photoshop's own export pixel for pixel.
@@ -13,7 +14,7 @@ All three are required. `aggdraw` is not optional — see below.
 
 ## Is the bridge actually working?
 
-Before trusting the Photoshop MCP with anything, prove two things. Both of these have failed
+Before trusting either MCP with anything, prove two things. Both of these have failed
 silently in practice, and both produce confident, wrong output rather than an error.
 
 **1. Does `execute_script` actually run?** It can return `"Custom script executed"` and
@@ -69,6 +70,27 @@ notch = Image.new("RGBA", CANVAS, (0x19, 0x19, 0x32, 0))
 notch.putalpha(notch_alpha)
 flat = Image.alpha_composite(base, notch)
 ```
+
+**A clipping layer rendered alone comes back 100% transparent.** Hide everything
+but one layer whose `clipping` flag is set and `composite(force=True)` returns an
+image with `alpha.max == 0` — no error, no warning. The layer has nothing to clip
+against, so it renders nothing. `getbbox()` then returns `None`, and any export
+helper that falls back to the nominal crop box writes a plausibly-sized, entirely
+empty PNG. It looks right in the file listing and it is blank on air.
+
+Check the flag before exporting (`layer._record.clipping`), and to get the art at
+full extent — which is what you want, because in HTML the clipping is done by the
+slot's `overflow: hidden` — clear it for the render and put it back:
+
+```python
+antes = layer._record.clipping
+layer._record.clipping = 0
+img = psd.composite(force=True, ignore_preview=True)
+layer._record.clipping = antes
+```
+
+Cheap guard that would have caught it: assert `img.getchannel("A").getextrema()[1] > 0`
+on every plate you write. A plate whose alpha never exceeds 0 is not a plate.
 
 **`aggdraw` is mandatory.** Without it, vector shape layers raise on `composite()` — but if you
 catch or skip that, they render *fully transparent*. A slanted decorative shape simply vanished

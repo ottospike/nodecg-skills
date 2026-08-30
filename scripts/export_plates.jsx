@@ -1,7 +1,21 @@
 // export_plates.jsx — exporta PLATES CONDENSADAS: N camadas do PSD viram 1 PNG trimado,
 // com a posicao original no canvas registrada. Dirigido por especificacao.
 //
-//   $.global.OUTDIR = "C:\\caminho\\para\\plates\\MeuGrafico";
+// PHOTOPEA MCP (caminho padrao) — UMA PLATE POR CHAMADA. O Photopea roda em sandbox de
+// browser: nao existe Folder, PNGSaveOptions nem saveAs, entao o script NAO grava o PNG.
+// Ele compoe e trima, deixa o documento resultante ATIVO, e quem grava e o MCP:
+//
+//   1. photopea_run_script  -> prefixe a config e cole o conteudo deste arquivo:
+//        var SPECS_IN = [ { out:"plate_x", keep:[[1,2]], ... } ];   // exatamente 1 spec
+//        <conteudo de export_plates.jsx>
+//      volta { exported:[{file,x,y,w,h,note,pending:true}] } — x/y sao a posicao no canvas
+//   2. photopea_export_image { format:"png", outputPath:"<OUTDIR>/plate_x.png" }
+//   3. photopea_run_script  -> app.activeDocument.close(); pra voltar ao PSD de origem
+//
+// Nao existe _plates.json no modo Photopea: dobre o retorno direto no assets.json.
+//
+// PHOTOSHOP MCP (alternativa) — lote, grava o PNG sozinho:
+//   $.global.OUTDIR = "/caminho/para/plates/MeuGrafico";
 //   $.global.SPECS  = [ { out:"plate_x", keep:[[1,2]], ... }, ... ];
 //   $.global.ONLY   = "plate_x,plate_y";   // opcional: roda so esses (lotes)
 //   $.evalFile(new File("<skill>/scripts/export_plates.jsx"))
@@ -34,19 +48,39 @@
 // tag. E o que torna as operacoes encadeaveis de forma confiavel.
 
 (function () {
-  var OUTDIR = $.global.OUTDIR;
-  var SPECS = $.global.SPECS;
-  if (!OUTDIR) throw new Error("defina $.global.OUTDIR");
-  if (!SPECS || !SPECS.length) throw new Error("defina $.global.SPECS");
+  // O Photopea nao tem $ (objeto do ExtendScript) nem filesystem. Detectar o runtime
+  // decide de onde vem a config e se o script grava o PNG ou so deixa o doc pronto.
+  var PHOTOPEA = (typeof app.echoToOE === "function");
+
+  // Config vem de dois lugares conforme o runtime: $.global (Photoshop) ou vars de topo
+  // declaradas antes do script colado (Photopea). Os nomes internos sao prefixados pra nao
+  // sombrear as vars de topo — sem isso o typeof abaixo enxergaria a declaracao local.
+  var _G = (typeof $ !== "undefined" && $.global) ? $.global : null;
+  function cfg(name, bare) {
+    if (_G && _G[name] !== undefined) return _G[name];
+    return bare;
+  }
+  var OUTDIR = cfg("OUTDIR", typeof OUTDIR_IN !== "undefined" ? OUTDIR_IN : undefined);
+  var SPECS  = cfg("SPECS",  typeof SPECS_IN  !== "undefined" ? SPECS_IN  : undefined);
+
+  if (!SPECS || !SPECS.length) throw new Error("defina SPECS_IN (Photopea) ou $.global.SPECS (Photoshop)");
+  if (!PHOTOPEA && !OUTDIR) throw new Error("defina $.global.OUTDIR");
+  if (PHOTOPEA && SPECS.length > 1)
+    throw new Error("no Photopea e uma plate por chamada: o PNG e gravado depois, por photopea_export_image");
 
   var TAG = "__P";
   var src = app.activeDocument;
-  var outDir = new Folder(OUTDIR);
-  if (!outDir.exists) outDir.create();
 
-  var pngOpts = new PNGSaveOptions();
-  pngOpts.compression = 9;
-  pngOpts.interlaced = false;
+  var outDir = null, SEP = "/", pngOpts = null;
+  if (!PHOTOPEA) {
+    outDir = new Folder(OUTDIR);
+    if (!outDir.exists) outDir.create();
+    // fsName usa "\\" no Windows e "/" no macOS — nao cravar o separador.
+    SEP = (outDir.fsName.indexOf("\\") >= 0) ? "\\" : "/";
+    pngOpts = new PNGSaveOptions();
+    pngOpts.compression = 9;
+    pngOpts.interlaced = false;
+  }
 
   var results = [], errors = [];
 
@@ -245,11 +279,17 @@
       work.trim(TrimType.TRANSPARENT);
       var w = Math.round(work.width.as("px")), h = Math.round(work.height.as("px"));
 
-      work.saveAs(new File(outDir.fsName + "\\" + spec.out + ".png"), pngOpts, true, Extension.LOWERCASE);
-      work.close(SaveOptions.DONOTSAVECHANGES);
-      app.activeDocument = src;
-
-      results.push({ file: spec.out + ".png", x: ox, y: oy, w: w, h: h, note: spec.note || "" });
+      if (PHOTOPEA) {
+        // Deixa `work` ATIVO e aberto: o proximo passo e photopea_export_image, que le o
+        // documento ativo. Fechar aqui destruiria a plate antes de ela virar arquivo.
+        results.push({ file: spec.out + ".png", x: ox, y: oy, w: w, h: h,
+                       note: spec.note || "", pending: true });
+      } else {
+        work.saveAs(new File(outDir.fsName + SEP + spec.out + ".png"), pngOpts, true, Extension.LOWERCASE);
+        work.close(SaveOptions.DONOTSAVECHANGES);
+        app.activeDocument = src;
+        results.push({ file: spec.out + ".png", x: ox, y: oy, w: w, h: h, note: spec.note || "" });
+      }
     } catch (e) {
       errors.push(spec.out + " :: " + e);
       try { if (work) work.close(SaveOptions.DONOTSAVECHANGES); } catch (e2) {}
@@ -259,7 +299,8 @@
 
   // ---------- loop ----------------------------------------------------------
 
-  var only = $.global.ONLY ? String($.global.ONLY).split(",") : null;
+  var _only = cfg("ONLY", typeof ONLY_IN !== "undefined" ? ONLY_IN : undefined);
+  var only = _only ? String(_only).split(",") : null;
   function wanted(name) {
     if (!only) return true;
     for (var i = 0; i < only.length; i++) if (only[i] === name) return true;
@@ -268,8 +309,9 @@
 
   for (var s = 0; s < SPECS.length; s++) if (wanted(SPECS[s].out)) runSpec(SPECS[s]);
 
-  // manifesto acumulativo (lotes sucessivos nao se sobrescrevem)
-  try {
+  // manifesto acumulativo (lotes sucessivos nao se sobrescrevem).
+  // So no Photoshop: no Photopea nao ha filesystem, o retorno vai direto pro assets.json.
+  if (!PHOTOPEA) try {
     var mf = new File(outDir.fsName + "\\_plates.json");
     var prev = [];
     if (mf.exists) {
@@ -291,5 +333,7 @@
     mf.close();
   } catch (e) { errors.push("manifesto :: " + e); }
 
-  return { outDir: outDir.fsName, exported: results, errors: errors };
+  var out = { outDir: PHOTOPEA ? null : outDir.fsName, exported: results, errors: errors };
+  if (PHOTOPEA) app.echoToOE(JSON.stringify(out));
+  return out;
 })();

@@ -1,8 +1,14 @@
-# Photoshop ExtendScript traps
+# ExtendScript traps
 
 Everything here was learned by watching a script return confident, wrong output. The bundled
 scripts already handle all of it — this file exists for when you write custom JSX, or when a
 result looks plausible but the PNG is wrong.
+
+**Applies to both bridges.** Photopea's scripting API is ExtendScript-shaped — same
+`app.activeDocument`, `ArtLayer`, `LayerSet`, and the same silent invalidation of layer
+references after a move or reorder. The traps below are about the language and the document
+model, not about which MCP delivers the script. Only the last section is Photoshop-specific;
+the Photopea equivalents live in `photopea-mcp.md`.
 
 ## Layer references go stale after any reorder
 
@@ -97,7 +103,10 @@ Gradient stop `location` is 0–4096, so `pct = location / 4096 * 100`. Photosho
 Text is friendlier — `textItem.font` (PostScript name), `.size`, `.color.rgb.hexValue`,
 `.justification`, `.contents` all work directly.
 
-## Working through the MCP
+## Working through the Photoshop MCP
+
+Photopea is the default bridge — for its tool map, identity probe and export loop see
+`photopea-mcp.md`. What follows is the Photoshop MCP path.
 
 - `photoshop_ping` once per session, not per call.
 - **`execute_script` can be a silent no-op.** It returns `"Custom script executed"` and
@@ -118,7 +127,8 @@ Text is friendlier — `textItem.font` (PostScript name), `.size`, `.color.rgb.h
   leaves the source document untouched — just re-run the rest.
 - **`$.evalFile` beats pasting.** Write the script to disk once, then call it repeatedly with
   different globals. `$.global` values persist across `photoshop_execute_script` calls within a
-  session.
+  session. Neither exists on Photopea: no filesystem, no `$` — the body goes in inline and the
+  config goes in as top-level `SPECS_IN` / `OUTDIR_IN` vars declared above it.
 - **The script body runs inside a wrapping IIFE** — you need an explicit `return`.
 - **Photoshop blocks while the user interacts with it.** Calls fail with a `cscript` error;
   `photoshop_get_state` fails too. That's a busy UI, not a broken script. Wait and retry.

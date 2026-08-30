@@ -4,7 +4,10 @@
 // solido e os GRADIENTES (fill layers e gradient overlay) ja com as paradas em % e o
 // angulo convertido pra CSS. E o unico dump que voce precisa pra planejar a extracao.
 //
-// Uso: $.evalFile(new File("<skill>/scripts/inspect_psd.jsx"))
+// Uso (Photopea MCP — caminho padrao): cole o CONTEUDO deste arquivo inteiro em
+//   photopea_run_script. Nao existe $.evalFile no Photopea: o script roda no browser,
+//   sem acesso ao filesystem. O dump volta por app.echoToOE, ja como string JSON.
+// Uso (Photoshop MCP): $.evalFile(new File("<skill>/scripts/inspect_psd.jsx"))
 //
 // Os caminhos por indice sao o enderecamento usado por export_plates.jsx. Indice 0 = camada
 // do TOPO (Photoshop indexa de cima pra baixo) — isso importa pra clipping mask, que sempre
@@ -173,10 +176,15 @@
 
   walk(doc, []);
 
-  return {
+  var out = {
     doc: String(doc.name),
     canvas: { w: Math.round(doc.width.as("px")), h: Math.round(doc.height.as("px")) },
     layerCount: layers.length,
     layers: layers, texts: texts, fills: fills, gradients: gradients
   };
+
+  // Photopea so devolve dado por app.echoToOE (string). O Photoshop devolve o ultimo
+  // valor do IIFE. Fazer os dois deixa o mesmo arquivo servir aos dois MCPs.
+  if (typeof app.echoToOE === "function") app.echoToOE(JSON.stringify(out));
+  return out;
 })();
