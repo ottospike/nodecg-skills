@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "nodecg",
+  "description": "Convenções para bundles NodeCG de broadcast ao vivo: replicants, GSAP, dashboard, ponte vMix/OBS, deploy e PSD→HTML.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Otavio Cavalcanti",
+    "url": "https://github.com/tavinho3c"
+  },
+  "homepage": "https://github.com/tavinho3c/nodecg-skills",
+  "repository": "https://github.com/tavinho3c/nodecg-skills",
+  "keywords": ["nodecg", "broadcast", "overlay", "gsap", "vmix", "replicant"]
+}

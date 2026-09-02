@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace-manifest.json",
+  "name": "nodecg-skills",
+  "owner": {
+    "name": "Otavio Cavalcanti",
+    "url": "https://github.com/tavinho3c"
+  },
+  "description": "Skills de grafismo para bundles NodeCG de broadcast ao vivo.",
+  "plugins": [
+    {
+      "name": "nodecg",
+      "source": "./",
+      "description": "Convenções para bundles NodeCG de broadcast ao vivo: replicants, GSAP, dashboard, ponte vMix/OBS, deploy e PSD→HTML.",
+      "keywords": ["nodecg", "broadcast", "overlay", "gsap", "vmix", "replicant"]
+    }
+  ]
+}
