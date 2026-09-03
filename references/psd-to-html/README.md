@@ -23,9 +23,10 @@ produces a pile of shapes nobody can reassemble.
 ## Workflow
 
 **1. Look at the flattened reference first.** Most PSDs ship next to an exported PNG. Read it
-as an image before touching the editor and describe the composition out loud: what's static
-decoration, what's live data, what states exist (empty/full, normal/highlighted), how the piece
-behaves over time, and what an operator would trigger. This is the single highest-leverage step
+as an image before touching the editor and describe the composition out loud: **which type of
+piece this is** (`tipos-de-peca.md` — lower third, fullscreen, in-game or bug, and what each
+one implies), what's static decoration, what's live data, what states exist (empty/full,
+normal/highlighted), how the piece behaves over time, and what an operator would trigger. This is the single highest-leverage step
 — it tells you what the plates *are*. Without it you're reverse-engineering intent from layer
 names like "Retângulo 3 copiar 2".
 
@@ -92,12 +93,14 @@ bounds that look plausible in the return value are routinely wrong art.
 nothing in them says where they go or what font the missing text used. Write both files *into
 the same folder as the plates*, so the whole thing travels as one unit.
 
-**The folder is named after the PSD**, extension stripped, original casing kept —
-`LT_MetaLike.psd` → `LT_MetaLike/`. That name is the link back to the source: a revised PSD
-tells you which folder to re-export without anyone having to remember the mapping.
+**The folder is derived from the PSD's name**, inside its category folder: all lowercase,
+every word after the first capitalised, acronyms included — `L3_MetaLike.psd` →
+`l3/l3_metaLike/`. That name is the link back to the source: a revised PSD tells you which
+folder to re-export without anyone having to remember the mapping. The category is the piece
+type's short code (`l3`, `fs`, `ig`, `bug`) — see `tipos-de-peca.md`.
 
 ```
-graphics/assets/LT_MetaLike/
+graphics/assets/l3/l3_metaLike/
 ├── assets.json     ← the graphic fetches this at runtime and builds the DOM from it
 ├── ASSETS.md       ← the human-readable version: reference image, tables, CSS scaffold
 ├── *.png           ← runtime plates
@@ -135,7 +138,7 @@ close it before the next plate. Three calls, one plate — see `photopea-mcp.md`
 On the **Photoshop MCP**, drive it with globals and batch, then `$.evalFile`:
 
 ```js
-$.global.OUTDIR = "/.../graphics/assets/LT_MetaLike";   // = nome do PSD
+$.global.OUTDIR = "/.../graphics/assets/l3/l3_metaLike";   // = derivado do nome do PSD
 $.global.SPECS = [
   { out: "plate_question", keep: [[1,1],[1,2]], note: "question panel, no text" },
   { out: "answer_a_win",   keep: [[2,16],[2,10],[2,8]],
@@ -234,6 +237,10 @@ not the samples.
 - `png-analysis.md` — **the no-PSD path**, and the measuring step for the PSD path. How to
   run `analyze_png.py`, how to read what it returns, what it can't see, and how to write the
   descriptive markdown — including the section listing what must be requested from the designer.
+- `tipos-de-peca.md` — **read before interpreting the art.** The vocabulary: what a lower
+  third, a fullscreen, an in-game and a bug each are and how they differ, what "area of
+  interest" means (it belongs to the video underneath, not to the piece), and how plates get
+  layered — why the cut is decided by state rather than by drawing.
 - `bundle-conventions.md` — **read before deciding the plates.** What a lower third, a
   fullscreen (two flavours — switcher input vs. HTML-built) and a meter each need from the
   extraction, where the files live in the bundle, what must *not* be baked into a plate, and

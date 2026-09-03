@@ -6,7 +6,7 @@ começa mais ou menos em 160" vira 3px de erro que aparece no ar. O script não
 interpreta o desenho — ele mede, recorta, e deixa a interpretação pra quem sabe o
 que a peça faz.
 
-    python analyze_png.py L3_MetaLike.png --out assets/LT_MetaLike
+    python analyze_png.py L3_MetaLike.png --out assets/l3/l3_metaLike
 
 Escreve <out>/_analysis/report.json e um recorte PNG de cada bloco encontrado
 (1x e 3x nearest). O passo seguinte é OLHAR os recortes — o report diz onde as

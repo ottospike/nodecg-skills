@@ -1,6 +1,6 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
+description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. Use também quando o trabalho começar no Google Drive ("quais gráficos esse projeto pede", "lista as demandas do Drive", "baixa os PSDs do projeto", "monta a estrutura de pastas dos gráficos"), ou quando a dúvida for de vocabulário ("isso é um lower third ou um in-game?", "o que é área de interesse", "como decido o corte das plates"). É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
 ---
 
 # Bundles NodeCG para broadcast
@@ -38,12 +38,14 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
 | **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
+| **O trabalho começa no Google Drive** — quais gráficos o projeto pede, baixar os PSDs, montar a estrutura de pastas | `references/drive-to-graphics.md` |
+| **"Isso é um lower third ou um in-game?"** — vocabulário dos tipos de peça, área de interesse, como se decide o corte das plates | `references/psd-to-html/tipos-de-peca.md` |
 | **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
 | **A arte veio só como PNG achatado** ou como frame de transmissão, sem camadas — inclusive vários frames da mesma peça | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
 
-Os dois últimos são subskills completas: têm seu próprio fluxo, e você segue o
-documento inteiro em vez de só consultar. Entre neles pela primeira linha, que diz
+O do Drive e os dois últimos são subskills completas: têm seu próprio fluxo, e você
+segue o documento inteiro em vez de só consultar. Entre neles pela primeira linha, que diz
 quando o documento se aplica.
 
 ---
@@ -132,15 +134,21 @@ de ordem entre ensaio e programa; a peça continua sendo o que ela mostra.
 **Painéis** — nome do bloco de operação, minúsculo: `quiz.html`, `lowerthirds.html`,
 `valores.html`. Agrupe por *quando o operador mexe*, não por qual gráfico é.
 
-**Assets** — uma pasta por peça em `graphics/assets/`, **com o nome do arquivo do
-Photoshop, sem a extensão**:
+**Assets** — uma pasta por peça em `graphics/assets/<categoria>/`, derivada do nome
+do arquivo do Photoshop: **tudo minúsculo, cada palavra depois da primeira com
+inicial maiúscula**. Sigla não é exceção.
 
 ```
-LT_MetaLike.psd  →  graphics/assets/LT_MetaLike/
-FS_Contador.psd  →  graphics/assets/FS_Contador/
+L3_MetaLike.psd   →  graphics/assets/l3/l3_metaLike/
+FS_Contador.psd   →  graphics/assets/fs/fs_contador/
+FS_VS.psd         →  graphics/assets/fs/fs_vs/
+IG_OverlayMain.psd →  graphics/assets/ig/ig_overlayMain/
 ```
 
-Manter o nome do PSD é o que liga o asset de volta à origem sem ninguém precisar
+A categoria é a sigla do tipo de peça, minúscula — `l3`, `fs`, `ig`, `bug`. O que
+cada uma quer dizer está em `references/psd-to-html/tipos-de-peca.md`.
+
+Derivar o nome do PSD é o que liga o asset de volta à origem sem ninguém precisar
 lembrar: quem recebe um PSD revisado sabe na hora qual pasta reexportar, e quem
 abre a pasta sabe qual arquivo pedir ao designer. Pastas antigas com outro nome
 ficam como estão — a regra vale pra pasta nova.

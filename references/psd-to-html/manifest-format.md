@@ -144,7 +144,7 @@ strings need truncating. Those are the assumptions that cause rework when discov
 Keep it short — a few paragraphs and a small table. It's orientation, not a spec.
 
 ````markdown
-# LT_MetaLike — extracted assets      ← same name as the PSD and the folder
+# l3_pergunta — extracted assets      ← same name as the folder, derived from the PSD
 
 **Source:** `Broadcast/L3_Pergunta/L3_Pergunta.psd` · **Canvas:** 1920×1080
 **Reference:** ![](../../L3_Pergunta/L3_Pergunta.png)

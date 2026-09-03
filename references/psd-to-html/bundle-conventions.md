@@ -9,21 +9,25 @@ não aparece no PNG; aparece quando o operador aperta um botão e o estado não 
 
 ## Duas regras que valem pra toda peça
 
-### A pasta tem o nome do PSD
+### A pasta é derivada do nome do PSD, dentro da categoria
 
-Sem a extensão, com a caixa original. `LT_MetaLike.psd` produz
-`graphics/assets/LT_MetaLike/`, e é dentro dela que vão os plates **e** os guias:
+Tudo minúsculo, cada palavra depois da primeira com inicial maiúscula, sigla
+inclusive. `L3_MetaLike.psd` produz `graphics/assets/l3/l3_metaLike/`, e é dentro
+dela que vão os plates **e** os guias:
 
 ```
-graphics/assets/LT_MetaLike/
+graphics/assets/l3/l3_metaLike/
 ├── ASSETS.md          ← guia humano: referência, tabelas, scaffold CSS, armadilhas
 ├── assets.json        ← os mesmos números em JSON, fonte da verdade
 ├── *.png              ← runtime
 └── _*.png / _*.json   ← NÃO vai ao ar
 ```
 
-Manter o nome do PSD é o que liga o asset de volta à origem sem depender de
-memória: chegou um `LT_MetaLike.psd` revisado, você sabe na hora qual pasta
+A categoria é a sigla do tipo — `l3`, `fs`, `ig`, `bug`; o que cada uma quer dizer
+está em `tipos-de-peca.md`, ao lado deste arquivo.
+
+Derivar o nome do PSD é o que liga o asset de volta à origem sem depender de
+memória: chegou um `L3_MetaLike.psd` revisado, você sabe na hora qual pasta
 reexportar; abriu a pasta, sabe qual arquivo pedir ao designer. Pasta antiga com
 outro nome fica como está — a regra vale pra pasta nova.
 

@@ -248,11 +248,16 @@ Um `ANALISE.md` **por pasta de peça**, mais um `README.md` na raiz que serve de
 # <NomeDaPeça> — análise da arte
 
 **Origem:** ARTE.png (sem PSD) · **Canvas:** 1920×1080
-**Tipo:** lower third / fullscreen / overlay persistente
+**Tipo:** lower third / fullscreen / in-game / bug   ← vocabulário em `tipos-de-peca.md`
 
 ## O que é
 Uma frase sobre a peça e onde ela vive no quadro. Depois: quantos estados tem, o
 que é fixo, o que muda, e o que o operador dispara.
+
+Classifique o tipo antes de descrever o resto — ele é que diz se a peça divide o
+quadro com o vídeo ou toma o quadro, se é evento ou estado, e o que embaixo dela não
+pode ser coberto. `tipos-de-peca.md` tem os quatro tipos e a seção de área de
+interesse.
 
 ## Fundo (BG) — o que descartar      ← sem isto, alguém vai medir o vídeo
 O que está atrás, onde começa o gráfico, e o que é cromo de capture.
