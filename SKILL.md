@@ -318,23 +318,114 @@ Template completo em `assets/grafico-modelo.html`. As seis invariantes:
    o guard derruba junto tudo que a outra fonte trouxe. O sintoma aparece longe da
    causa: "o placar não atualiza" quando o problema é o painel de draft fechado.
 
-**Nunca um `<img>` cru no ar.** Toda imagem que pode faltar (foto de jogador, logo
-de time) carrega com fallback:
+### Imagem: PRELOAD antes do ar, e fallback sempre
+
+**Nunca um `<img>` cru, e nunca `background-image` direto no CSS para conteúdo.**
+Uma peça não pode entrar no ar com buraco: se a imagem ainda não decodificou, a
+barra desliza com o slot vazio e a foto **aparece de estalo** um instante depois,
+no ar. É o mesmo erro do auto-fit medir antes da fonte carregar — a peça anda
+antes de o material estar pronto.
+
+**Duas famílias de imagem, e as políticas são opostas:**
+
+| | arte versionada no bundle (plates) | URL que o operador digita (foto, escudo) |
+|---|---|---|
+| pode faltar? | **não** — se faltou é bug | **sim**, e é normal |
+| na falha | `nodecg.log.error` alto: a peça vai ao ar sem arte | placeholder silencioso, sem susto |
+| quando carregar | no **boot**, antes do primeiro `change` | a cada troca de conteúdo |
+
+**Use `decode()`, não `onload`.** Uma API só resolve as duas coisas — ela promete
+que a imagem está **decodificada e pronta para pintar**, e **rejeita** quando o
+arquivo não existe (medido: `EncodingError`), o que já é o caminho de erro:
 
 ```js
-function loadBgWithFallback(el, primary, fallback) {
-  const i = new Image();
-  i.onload  = () => (el.style.backgroundImage = `url(${primary})`);
-  i.onerror = () => (el.style.backgroundImage = `url(${fallback})`);
-  i.src = primary;
+/* Devolve true se pintou, false se caiu no fallback. Nunca estoura: uma imagem
+   ruim não pode derrubar o handler e congelar a peça no ar. */
+async function pintarImagem(el, url, fallback) {
+  el.__req = (el.__req || 0) + 1;          // token da requisição
+  const meu = el.__req;
+  if (!url) { el.style.backgroundImage = fallback ? `url("${fallback}")` : "none"; return false; }
+  const img = new Image();
+  img.src = url;
+  try {
+    await img.decode();
+    if (meu !== el.__req) return false;    // chegou tarde: outra já venceu
+    el.style.backgroundImage = `url("${url}")`;
+    return true;
+  } catch (e) {
+    if (meu !== el.__req) return false;
+    el.style.backgroundImage = fallback ? `url("${fallback}")` : "none";
+    return false;
+  }
 }
 ```
 
-Texto dentro de plate de largura fixa **precisa de auto-fit**: meça
-`getBoundingClientRect().width`, reduza de 1px em 1px até caber, com piso — e
-quando estourar o piso, `nodecg.log.warn` e deixa passar. Cortar o nome de alguém
-no meio é pior que passar 2px da arte. Reajuste em `document.fonts.ready`: medir
-com a fonte de fallback dá tamanho errado.
+🚨 **A trava de corrida (`__req`) não é zelo.** Ao vivo o operador troca de
+convidado duas vezes em segundos; sem o token, a imagem ANTERIOR — que demorou
+mais para baixar — chega depois e **sobrescreve a nova**. O sintoma é a peça
+mostrando a pessoa errada, e não há erro em lugar nenhum.
+
+**E o ar espera a imagem:** a entrada só roda depois que as imagens do conteúdo
+resolveram. Como já existe uma promessa por imagem, é um `Promise.all`:
+
+```js
+async function aplicar(estado) {
+  render(estado);                                   // texto entra na hora
+  await Promise.all(estado.fotos.map((u, i) => pintarImagem(slots[i], u, PLACEHOLDER)));
+  if (querVisivel && !noAr) entrar();               // só agora anima
+}
+```
+
+As **plates** seguem a mesma regra, mas no boot: pré-carregue todas antes de
+assinar o replicant, junto com as faces (§9). Uma plate que falha é erro alto —
+ela é arte versionada, e se sumiu alguém quebrou o bundle:
+
+```js
+/* Só baixa e decodifica; não pinta nada. Nunca rejeita — uma plate faltando
+   tem que virar log, não exceção que impede a peça de subir. */
+function precarregar(urls) {
+  return Promise.all(urls.map(async (u) => {
+    const img = new Image();
+    img.src = u;
+    try { await img.decode(); return true; }
+    catch (e) { nodecg.log.error(`[arte] plate não carregou: ${u} — a peça vai ao ar sem ela`); return false; }
+  }));
+}
+
+Promise.all([MEDIDA.pronta(FACES), precarregar(PLATES)]).then(iniciar);
+```
+
+Depois disso o navegador já tem tudo em cache, então o `background-image` do CSS
+pinta no primeiro quadro — que é o ponto: **a peça nunca aparece incompleta.**
+
+Texto dentro de plate de largura fixa **precisa de auto-fit**: reduza o corpo
+até caber, com piso — e quando estourar o piso, `nodecg.log.warn` e deixa passar.
+Cortar o nome de alguém no meio é pior que passar 2px da arte.
+
+**Mas a medição é uma armadilha de quatro camadas, e as quatro passam em teste.**
+Não improvise aqui:
+
+| Medindo com | O que acontece |
+|---|---|
+| `getBoundingClientRect().width` | devolve a **caixa**. Com largura fixa é sempre o mesmo número: o laço nunca reduz e o texto vaza em silêncio |
+| `scrollWidth` contra uma constante subpixel | é `max(conteúdo, caixa)` **arredondado pra inteiro**: numa caixa de 327,2 devolve 328 até vazio → "sempre estourando", e o laço corre até o piso. A peça fica **sempre no menor corpo** e ninguém desconfia |
+| `scrollWidth > clientWidth` | **correto** (inteiro contra inteiro), e é o que usar quando não precisa de fração |
+| `document.fonts.ready` antes de medir | resolve **na hora** quando o texto está vazio — que é como um gráfico nasce (o estado vem do replicant depois). Mede na fallback, escolhe corpo grande, a face real entra e vaza |
+| `document.fonts.check(face)` | devolve **`true` pra fonte que não existe**: a pergunta dele é "dá pra renderizar?", e a fallback sempre dá. Passa exatamente no caso que deveria pegar |
+
+O que funciona: **`Range` sobre os filhos** (`selectNodeContents`) pra medir o
+conteúdo com fração; **`status === "loaded"` da FontFace** em `document.fonts` pra
+saber se a face existe de verdade; **`rel=preload as=font crossorigin`** no
+`<head>` pra encurtar a janela; e o refit reagendado por **promessa**, não por
+evento — `loadingdone` dispara antes do conteúdo chegar e não há segunda chance.
+
+⚠️ **Carga fria é o caso difícil e é o que vai ao ar.** Um teste que espera
+`document.fonts.ready` antes de escrever o texto mede sempre com a fonte certa e
+sempre passa. E **render headless com `--virtual-time-budget` não serve** pra
+testar isso: ele queima o orçamento de espera em tempo virtual enquanto o fetch
+real está em voo, e acusa falha com o código correto.
+
+Implementação de referência: `graphics/shared/medida.js` no bundle da LEAGUETV.
 
 ---
 
