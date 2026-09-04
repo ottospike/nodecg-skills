@@ -62,6 +62,28 @@ Para outra resolução de saída, escale o stage inteiro — nunca mexa numa coo
 (`x`, `y` em 1920×1080), não centradas nem relativas. O HTML ancora por
 `left/top` absolutos, então o número que importa é onde a plate sentava na arte.
 
+### Peça de dois lados: meça a simetria antes de exportar dois de tudo
+
+Uma barra de confronto desenha tudo em duplicata — picks, bans, rótulos, tiras de nome.
+A tentação é exportar cada lado. **Meça primeiro**: se a arte for espelhada em torno do
+centro do canvas, um arquivo serve os dois lados com `transform: scaleX(-1)`, e a
+diferença é grande. No `L3_PicksBans` foram 7 pares conferidos, todos exatos, e 73
+camadas viraram 10 plates em vez de 17.
+
+A conta é uma linha por par, e ela fecha ou não fecha:
+
+```
+espelho_de(x, w) == 1920 - x - w
+```
+
+Duas coisas que a medição também entrega de graça. A primeira é uma **prova de que a
+extração está certa**: se um par não fecha, ou você pegou a camada errada, ou a arte tem
+uma assimetria real que precisa ser dita no `ASSETS.md` — nos dois casos você descobre
+antes de exportar, não depois. A segunda é o **critério de exceção**: no mesmo PSD, a
+tira de nomes falhou o teste, porque ela sangra pra fora do canvas e o corte em `x=0` e
+em `x=1920` deixa larguras diferentes (527 e 528). Essa virou dois arquivos, e a razão
+está escrita no manifesto. Exceção medida é decisão; exceção suposta é bug.
+
 ### Queime tudo que não muda — mas só isso
 
 Logo, zigue-zague, entalhe, rótulos fixos: dentro da plate. Menos elemento vivo,

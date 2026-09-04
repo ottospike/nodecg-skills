@@ -56,8 +56,30 @@ through the unreliable path.** The rule that follows:
 > Never read a colour, gradient or effect value off a plate render. Read it from the layer
 > descriptor, then verify against plain `composite()` or the designer's exported PNG.
 
-Plates themselves are still fine — geometry and plain artwork come through correctly. It's the
-*effects* that are untrustworthy.
+**And it is worse than wrong values: a Stroke effect is dropped entirely.** Measured on
+`L3_PicksBans` against the same plates exported through Photopea — a ban badge came back
+118x118 instead of 124x124 (**516 black outline pixels missing**), and a plaque 514x184 instead
+of 520x188 (**1734 missing**). The black outline is the whole visual language of that project,
+so the plate is not "slightly off", it is unusable — and the alpha bbox shrinks with it, which
+means the canvas coordinate you record is wrong too. Only a plate with no effects matched
+exactly (a flat text mark, 25x146, byte-identical).
+
+So the earlier line in this document — "geometry comes through correctly" — does not hold once
+layer effects are in play, and in this visual language they always are. The rule:
+
+> **Never ship a plate rendered by psd-tools when the layer or its group carries a Stroke, Drop
+> Shadow or Gradient Overlay.** Audit first (`layer.effects` per kept path); if anything is
+> enabled, that plate goes through the bridge. Geometry and plain artwork on an effect-free
+> layer are still fine.
+
+Two practical consequences. First, `pip install 'psd-tools[composite]'` is what makes
+`force=True` run at all — without `aggdraw` it raises on vector shapes and without
+`scikit-image` it raises on effects; installing them stops the exception but does **not** make
+the effect faithful, so a successful render is not evidence of a correct one. Second, this is
+what splits the work when several agents extract in parallel: reading, measuring and deciding
+the plates is local, deterministic and parallel; **the export is serial, because the bridge has
+one active document.** Have the parallel workers emit a spec — `[{ "out": "...", "keep":
+["9", "7/2"] }, ...]` in index paths — and run the exports from it yourself, one at a time.
 
 **Color Overlay has a related bug:** psd-tools applies it only to fully-opaque pixels, so the
 layer's original artwork bleeds through the antialiased edges. A notch whose Color Overlay was

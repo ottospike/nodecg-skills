@@ -95,6 +95,13 @@ mistake that ships broken layouts. Photoshop has two kinds of text layer and
 Record both plus `spanSource` (`designed` / `measured` / `derivedFromPlate`) so the next
 reader knows which numbers are load-bearing and which are estimates worth revisiting.
 
+**The symptom that every text layer reports the same `FontSize` is the tell.** On
+`L3_PicksBans` all 16 text layers came back at `37.22` — from a 121px `?` down to a 21px
+nickname. Nobody set sixteen layers to the same body size and then eyeballed the rest; the
+designer scaled the *layers*. When a dump shows one repeated nominal size across visibly
+different type, do not write any of them down: every single field needs the multiplication
+below. (Real sizes there: 121.1, 81.4, 62.2, 36.5, 35.4, 35.1, 31.1, 20.9.)
+
 **A transformed text layer's size is `FontSize × transform scale`, not `FontSize`.** Photoshop
 stores a nominal size and a transform separately, and designers scale text layers constantly — a
 layer reporting 26.87 can render at 53px. Multiply, then cross-check against the font's own

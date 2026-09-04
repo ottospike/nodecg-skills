@@ -58,10 +58,66 @@ call `echoToOE` with `JSON.stringify`, so parse the result. A custom script that
 There is no `photopea_ping`, and the failure it guards against still exists: the active document
 can silently be some other file, and destructive ops would then edit someone else's work.
 
-Call `photopea_get_document_info` and match **the document name and the canvas w/h** against the
-PSD you meant to open. If either disagrees, stop and re-open — do not send visibility toggles,
-deletes or recolors first. If the bridge itself looks unreliable, work read-only from Python
-instead: `psd-tools-fallback.md`.
+Call `photopea_get_document_info` and match the canvas w/h and the layer count against the PSD
+you meant to open. **The name will not help you**: a file opened by local path comes back as
+`{"name":"file", ...}`, not the PSD's filename, so a name check can never pass. Match on
+something that identifies the document instead — the cheapest reliable probe is the top-level
+layer names:
+
+```js
+var d = app.activeDocument, n = [];
+for (var i = 0; i < d.layers.length; i++) n.push(d.layers[i].name);
+app.echoToOE(JSON.stringify({docs: app.documents.length, w: d.width, h: d.height, topo: n}));
+```
+
+Compare that list against the psd-tools dump of the same file (remembering the orders are
+reversed — index 0 is the top layer here, and psd-tools iterates bottom-up), and check
+`app.documents.length` while you are there: more than one open document is the condition that
+makes "active document" ambiguous in the first place. If either disagrees, stop and re-open — do
+not send visibility toggles, deletes or recolors first. If the bridge itself looks unreliable,
+work read-only from Python instead: `psd-tools-fallback.md`.
+
+## Heavy PSDs: the script times out, the bridge is fine
+
+`photopea_run_script` is cut off at 30s, and on a large document that limit is reached by
+**reading**, not by writing. Measured on a 99 MB, 73-layer PSD: walking the tree to collect
+`L.bounds` timed out, twice — once with the Action Manager calls for fills and gradients, and
+again with those removed. A one-line probe on the same document answered instantly, so the
+bridge was never the problem; computing layer bounds is.
+
+Do not conclude the bridge is dead and do not retry the same script. Split the work by what each
+tool is actually good at:
+
+| | |
+|---|---|
+| tree, bounds, text specs, transforms, glyph coverage | psd-tools, locally — seconds, no timeout |
+| rendering a plate faithfully | the bridge, because psd-tools drops Stroke effects |
+
+`inspect_psd.jsx` is a single call that returns everything at once, which is exactly why it is
+the first thing to fail on a heavy document. Its dump is still the right thing to want; on a
+heavy PSD, get the same fields from Python and use the bridge only to export.
+
+## A lighter export loop when no spec needs recolor / lift / shift / clip
+
+`export_plates.jsx` duplicates the whole document and deletes everything outside `keep`, which
+is what makes `recolor`, `lift`, `shift` and `clip` possible — and what makes it heavy. When
+every plate in the piece is a plain "keep these layers", there is a cheaper loop that never
+duplicates and never deletes:
+
+1. **`photopea_run_script`** — set `visible` from a list of index paths: a layer is visible when
+   it is one of the targets, a descendant of one, or an ancestor of one. Nothing else changes.
+2. **`photopea_export_image`** — write the whole 1920x1080 canvas to a temp path.
+3. **crop locally** to the alpha bbox with Pillow (`Image.getbbox()`), and save under the plate's
+   name.
+
+Two calls per plate instead of three, the source document is never mutated beyond visibility, and
+there is no stale-reference risk because no layer is ever moved, merged or removed. It also gives
+a *better* number than the script does: the alpha bbox of the rendered result is the plate's true
+canvas coordinate, whereas a reported layer bound is the thing that lies when a clipping mask
+silently releases (`extendscript-gotchas.md`).
+
+Reach for `export_plates.jsx` when you actually need to synthesize a state the designer drew
+once; reach for this when you are only cutting apart what is already there.
 
 ## Exporting plates — one per call
 
