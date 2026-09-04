@@ -260,9 +260,47 @@ O que legitimamente sai do arquivo:
 | `dashboard/<bundle>.css` | design system dos painéis — trocar uma cor muda o dashboard todo |
 | `dashboard/comum.js` | helper usado por 2+ painéis (ex.: `marcarAr`) |
 | `dashboard/pessoas.js`, `perguntas.js` | **conteúdo**, editado antes do programa por quem não é dev |
-| `graphics/shared/*.js` | driver compartilhado por 2+ gráficos |
-| `graphics/shared/fontes.css` | `@font-face` num lugar só |
+| `graphics/utils/*.js` | utilitário usado por 2+ gráficos — ver abaixo |
+| `graphics/utils/fontes.css` | `@font-face` num lugar só |
 | `graphics/vendor/gsap.min.js` | biblioteca, versionada junto (ver §7) |
+
+### `utils/` e `shared/` são coisas diferentes
+
+Confundir os dois é fácil e o nome não ajuda, então a regra é por QUEM LÊ:
+
+| Pasta | Quem lê | Como é referenciada |
+|---|---|---|
+| `<bundle>/shared/` | dashboard **e** graphics | `/bundles/<b>/shared/x` — absoluta, é rota nativa do NodeCG |
+| `<bundle>/graphics/utils/` | **só** os gráficos | `utils/x` — relativa |
+
+Tema, paleta e catálogo de asset são dos dois lados: vão em `shared/`. Utilitário
+de runtime de peça é só dos gráficos: vai em `utils/`. Um `shared/` dentro de
+`graphics/` é ambíguo — parece a rota nativa e não é.
+
+### O que mora em `utils/`
+
+Estes quatro reaparecem em todo bundle de transmissão, e cada um existe porque a
+forma ingênua tem um defeito que **só aparece no ar**:
+
+| Arquivo | Resolve | O defeito que ele evita |
+|---|---|---|
+| `fit.js` | escala o `.stage` pro tamanho da saída | peça montada no tamanho da barra, que não cai onde o designer desenhou |
+| `devmode.js` | régua e diagnóstico com `?dev=1` | conferir geometria no olho |
+| `medida.js` | auto-fit de texto | as **cinco** armadilhas de medição do §6 — a caixa, o inteiro, a fonte não carregada, o `check()` que mente, a escala do stage |
+| `imagem.js` | imagem dinâmica | entrar no ar com buraco, e a requisição anterior sobrescrever a nova |
+
+**Quando promover.** Utilitário nasce **dentro da peça** e só sobe pra `utils/`
+quando a **segunda** peça precisa dele. Subir na primeira é abstrair sem caso de
+uso, e a assinatura sai errada — a segunda peça é que revela o que varia.
+
+**O que NÃO sobe:** geometria e timeline. Elas são daquela arte e de mais nenhuma,
+e ficam inline no `.html` mesmo quando 80% do CSS se repete entre duas peças.
+
+🚨 **Um utilitário de `utils/` é código de AR.** Ele roda em toda peça ao mesmo
+tempo: um bug ali não derruba uma, derruba o programa. Por isso ele nunca rejeita
+promessa nem estoura exceção — degrada, loga e deixa a peça desenhar. E os
+comentários dele registram a MEDIÇÃO que justificou cada decisão, porque a próxima
+pessoa vai olhar aquele laço estranho e querer "simplificar".
 
 Regra de bolso: **CSS de painel nunca é inline no painel** (o design system existe
 pra isso); **CSS de gráfico é sempre inline no gráfico** (a geometria é daquela arte
@@ -296,7 +334,7 @@ Template completo em `assets/grafico-modelo.html`. As seis invariantes:
    deslizando, no ar.
 3. **Trava de on-air**: só anima na *transição*. PLAY com a peça já no ar não
    re-anima.
-4. `shared/fit.js` e `shared/devmode.js`, nessa ordem, **por último** no body.
+4. `utils/fit.js` e `utils/devmode.js`, nessa ordem, **por último** no body.
 5. `window.test(...)` no fim do script — ensaiar a peça no navegador sem depender
    do painel. É o que torna a peça verificável por render headless.
 6. `<link rel="stylesheet" href="shared/fontes.css" />` no head.
@@ -425,7 +463,7 @@ sempre passa. E **render headless com `--virtual-time-budget` não serve** pra
 testar isso: ele queima o orçamento de espera em tempo virtual enquanto o fetch
 real está em voo, e acusa falha com o código correto.
 
-Implementação de referência: `graphics/shared/medida.js` no bundle da LEAGUETV.
+Implementação de referência: `graphics/utils/medida.js` no bundle da LEAGUETV.
 
 ---
 
@@ -527,7 +565,7 @@ tamanho da arte.
 
 ## 9. Fontes
 
-Um `graphics/shared/fontes.css`, linkado por todo gráfico. Arquivos em
+Um `graphics/utils/fontes.css`, linkado por todo gráfico. Arquivos em
 `graphics/fonts/<Familia>/`.
 
 **Cada corte é uma face de verdade com seu peso declarado** — nunca simule.
@@ -741,7 +779,7 @@ assinatura: é o debounce do watcher, não um require do seu código.
 
 `DB_DEVMODE` é **booleano puro**, publicado pela extension, `persistent: false`
 (se persistisse, a primeira peça a entrar no ar depois de um restart entraria com
-a régua por cima). O `shared/devmode.js` reage ligando três coisas:
+a régua por cima). O `utils/devmode.js` reage ligando três coisas:
 
 1. **Fundo `#3C3C3C`** no body. Browser source é transparente, e transparente no
    navegador é indistinguível de "a peça não carregou" — os dois são branco. Com

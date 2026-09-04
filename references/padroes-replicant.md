@@ -158,7 +158,7 @@ nada pode se declarar no ar; o operador decide de novo.
 `DB_DEVMODE` é publicado pela extension (env `NODE_ENV=development` ou
 `devMode: true` em `cfg/<bundle>.json`), `persistent: false`, e o cliente **nunca
 escreve nele** — não tem como "esquecer ligado" e ir ao ar com fundo cinza.
-`shared/devmode.js` pinta o body de `#3c3c3c`; os gráficos usam
+`utils/devmode.js` pinta o body de `#3c3c3c`; os gráficos usam
 `stage.classList.toggle("dev", v === true)` pra mostrar seu painel de diagnóstico.
 
 ## 8. Estado vivo entre peças
