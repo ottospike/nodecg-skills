@@ -12,11 +12,11 @@ não aparece no PNG; aparece quando o operador aperta um botão e o estado não 
 ### A pasta é derivada do nome do PSD, dentro da categoria
 
 Tudo minúsculo, cada palavra depois da primeira com inicial maiúscula, sigla
-inclusive. `L3_MetaLike.psd` produz `graphics/assets/l3/l3_metaLike/`, e é dentro
+inclusive. `L3_MetaLike.psd` produz `<assets>/l3/l3_metaLike/`, e é dentro
 dela que vão os plates **e** os guias:
 
 ```
-graphics/assets/l3/l3_metaLike/
+<assets>/l3/l3_metaLike/
 ├── ASSETS.md          ← guia humano: referência, tabelas, scaffold CSS, armadilhas
 ├── assets.json        ← os mesmos números em JSON, fonte da verdade
 ├── *.png              ← runtime

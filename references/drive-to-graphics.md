@@ -7,7 +7,7 @@
 >
 > É a subskill que vem **antes** do `psd-to-html/`. Ela descobre o que existe,
 > traz pra máquina, dá nome e organiza; a extração em si é do outro documento. E
-> termina promovendo a pasta pronta pra `graphics/assets/`.
+> termina com a peça pronta na pasta de assets servida do bundle (§2).
 
 O designer trabalha no Drive, o bundle vive no disco, e ninguém mantém as duas
 pontas na cabeça. Esta é a ponte: **inventariar → escolher → baixar → extrair →
@@ -90,16 +90,58 @@ outro caminho. Registre no inventário como tal em vez de pular.
 
 ## 2. Nomes
 
-Duas traduções, e as duas são mecânicas.
+Duas traduções mecânicas. Antes delas, uma pergunta que o bundle responde — não você.
+
+### Qual é a pasta de assets do bundle
+
+Chame-a de `<assets>/`. **O padrão é `graphics/assets/`**, e a razão está no manifesto: os
+campos que um bundle declara em `package.json` → `nodecg` são
+
+```
+dashboardPanels · graphics · assetCategories · mount · soundCues · bundleDependencies
+```
+
+A arte de uma peça pertence aos gráficos, e `graphics/` é declarado. O painel lê o mesmo
+arquivo pela URL `/bundles/<bundle>/graphics/assets/...` — não há restrição de acesso entre
+os diretórios, então "o painel também usa" não é motivo pra tirar a arte de lá.
+
+Duas coisas que parecem alternativa e não são:
+
+**`shared/` não é pasta de asset.** Ela existe (o `sharedSourceRouter` serve
+`/bundles/<bundle>/shared/*`), mas **não aparece no manifesto** — não dá pra ver pelo
+`package.json` que ela está sendo servida. E o nome diz o escopo: *shared **source*** — um
+módulo que o dashboard e o gráfico carregam, tipo um `assets.js` que resolve nome em URL.
+Script compartilhado, sim; PNG de plate, não.
+
+**`assetCategories` também não.** É o sistema de **upload pelo dashboard**: arquivo que o
+operador sobe em tempo de operação, guardado na pasta `assets/` da instalação. Nada a ver
+com arte versionada no repositório.
+
+Se a arte precisar mesmo morar fora de `graphics/`, o caminho declarado é o `mount`:
+
+```json
+"nodecg": { "mount": [{ "directory": "assets", "endpoint": "assets" }] }
+```
+
+O `mountsRouter` publica o diretório em `/bundles/<bundle>/<endpoint>/*`, e fica visível no
+`package.json` como todo o resto. Um bundle que já centralizou arte noutro lugar servido
+continua onde está — **não migre nada no meio de uma extração**; só confirme antes de criar
+pasta nova:
+
+```
+grep -rho "/bundles/<bundle>/[a-z]*/assets" graphics/ dashboard/ shared/ | sort | uniq -c
+```
+
+### As duas traduções
 
 **A categoria vira a sigla do Drive, minúscula:**
 
 | Drive | Bundle |
 |---|---|
-| `L3` | `graphics/assets/l3/` |
-| `FS` | `graphics/assets/fs/` |
-| `IG` | `graphics/assets/ig/` |
-| `BUG` | `graphics/assets/bug/` |
+| `L3` | `<assets>/l3/` |
+| `FS` | `<assets>/fs/` |
+| `IG` | `<assets>/ig/` |
+| `BUG` | `<assets>/bug/` |
 
 **A peça vira prefixo minúsculo + camelCase, com sigla minusculizada:**
 
@@ -137,9 +179,9 @@ categorias e cruze com o que já existe no bundle:
 
 | Categoria | Peça | Pasta no bundle | Tamanho do PSD | Estado |
 |---|---|---|---|---|
-| l3 | `l3_metaLike` | `assets/l3/l3_metaLike/` | 1,5 MB | **em dia** |
+| l3 | `l3_metaLike` | `<assets>/l3/l3_metaLike/` | 1,5 MB | **em dia** |
 | fs | `fs_vs` | — | 313 MB | **nova** |
-| bug | `bug_replay` | `assets/bug/bug_replay/` | 69 MB | **PSD revisado** |
+| bug | `bug_replay` | `<assets>/bug/bug_replay/` | 69 MB | **PSD revisado** |
 
 Os três estados saem da comparação entre o `modifiedTime` que o Drive reporta e o
 `driveModifiedTime` gravado no `assets.json` da pasta (§6):
@@ -162,7 +204,7 @@ Só o que foi apontado. Para cada peça escolhida, dois destinos diferentes:
 
 ```
 refs/<Nome_Original>.psd              ← o PSD, com o nome do Drive intacto
-refs/_wip/<cat>/<peça>/               ← a pasta de trabalho
+<pasta de trabalho>/<cat>/<peça>/     ← §5 diz se é `<assets>/` ou `refs/_wip/`
 └── _reference.png                    ← o achatado do designer
 ```
 
@@ -177,17 +219,31 @@ cinza do mockup, tapa o vídeo inteiro se alguém apontar uma browser source pra
 
 ---
 
-## 5. Trabalhar em `refs/_wip/`, não em `graphics/`
+## 5. Onde a peça é construída
 
-**Nada nasce dentro de `graphics/`.** Tudo que está lá é servido pelo NodeCG assim que
-o bundle sobe, e uma pasta em construção — plates pela metade, manifesto sem os campos
-dinâmicos, um `_reference.png` que ainda não foi renomeado — é uma pasta que alguém
-consegue pôr no ar. Em transmissão ao vivo não existe "eu ia arrumar depois".
+Duas situações, e o que as separa é se **já existe alguém lendo a peça**.
 
-A pasta de trabalho tem a estrutura final desde o começo, só que noutro lugar:
+**Ninguém consome a peça ainda** — nenhum gráfico referencia a pasta, e ela não está em
+`nodecg.graphics`. Construa direto em `<assets>/<cat>/<peça>/`. Não há o que ler pela
+metade, e o staging só acrescentaria um movimento de arquivo no fim.
+
+**A peça já está no ar** — existe gráfico lendo o `assets.json` dela, ou uma browser source
+apontada pra ela no switcher. Construa em `refs/_wip/<cat>/<peça>/` e promova por movimento
+(§8). O risco aqui não é a pasta incompleta: é **substituir por baixo** de algo que o vMix
+já tem aberto. Em transmissão ao vivo não existe "eu ia arrumar depois".
+
+O critério é verificável, não é julgamento:
 
 ```
-refs/_wip/l3/l3_metaLike/
+grep -rl "<peça>" graphics/ dashboard/ package.json
+```
+
+Sem saída, é o primeiro caso.
+
+De um jeito ou de outro, **a pasta tem a estrutura final desde o começo**:
+
+```
+<pasta de trabalho>/l3/l3_metaLike/
 ├── assets.json
 ├── ASSETS.md
 ├── *.png                 ← plates de runtime
@@ -223,9 +279,10 @@ revisada na consulta seguinte.
 
 ---
 
-## 7. Revisar antes de promover
+## 7. Revisar antes de pôr em uso
 
-A promoção é a hora em que a peça passa a existir pro NodeCG. Antes dela:
+É aqui que a peça passa a valer pro NodeCG — construída direto em `<assets>/` ou promovida
+do `_wip`. Antes de dizer que está pronta:
 
 - [ ] os PNGs foram **abertos e olhados**, não só conferidos pelos bounds do retorno
 - [ ] nenhum plate carrega o cinza do mockup nem texto de placeholder
@@ -240,12 +297,16 @@ Só o que não vai ao ar pode ficar impreciso. O resto vai pro ar exatamente com
 
 ---
 
-## 8. Promover
+## 8. Promover — só quando houve `_wip`
 
-Mover, não copiar — duas cópias divergem em uma revisão:
+Peça construída direto em `<assets>/` (o primeiro caso da §5) já está no lugar: a §7 é a
+última etapa dela.
+
+Quando houve pasta de trabalho, **mover, não copiar** — duas cópias divergem na primeira
+revisão:
 
 ```
-refs/_wip/l3/l3_metaLike/   →   graphics/assets/l3/l3_metaLike/
+refs/_wip/l3/l3_metaLike/   →   <assets>/l3/l3_metaLike/
 ```
 
 O `refs/_wip/` fica vazio ao fim de cada peça. Pasta de trabalho que sobrevive vira,

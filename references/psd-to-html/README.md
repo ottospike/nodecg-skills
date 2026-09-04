@@ -93,14 +93,17 @@ bounds that look plausible in the return value are routinely wrong art.
 nothing in them says where they go or what font the missing text used. Write both files *into
 the same folder as the plates*, so the whole thing travels as one unit.
 
-**The folder is derived from the PSD's name**, inside its category folder: all lowercase,
+**The folder is derived from the PSD's name**, inside its category folder, inside the
+bundle's served assets folder — `<assets>/`, which is `shared/assets/` in most bundles and
+`graphics/assets/` where that is already the convention (`drive-to-graphics.md` §2 has the
+criterion). All lowercase,
 every word after the first capitalised, acronyms included — `L3_MetaLike.psd` →
 `l3/l3_metaLike/`. That name is the link back to the source: a revised PSD tells you which
 folder to re-export without anyone having to remember the mapping. The category is the piece
 type's short code (`l3`, `fs`, `ig`, `bug`) — see `tipos-de-peca.md`.
 
 ```
-graphics/assets/l3/l3_metaLike/
+<assets>/l3/l3_metaLike/
 ├── assets.json     ← the graphic fetches this at runtime and builds the DOM from it
 ├── ASSETS.md       ← the human-readable version: reference image, tables, CSS scaffold
 ├── *.png           ← runtime plates
@@ -138,7 +141,7 @@ close it before the next plate. Three calls, one plate — see `photopea-mcp.md`
 On the **Photoshop MCP**, drive it with globals and batch, then `$.evalFile`:
 
 ```js
-$.global.OUTDIR = "/.../graphics/assets/l3/l3_metaLike";   // = derivado do nome do PSD
+$.global.OUTDIR = "/.../<assets>/l3/l3_metaLike";   // = derivado do nome do PSD
 $.global.SPECS = [
   { out: "plate_question", keep: [[1,1],[1,2]], note: "question panel, no text" },
   { out: "answer_a_win",   keep: [[2,16],[2,10],[2,8]],

@@ -134,16 +134,25 @@ de ordem entre ensaio e programa; a peça continua sendo o que ela mostra.
 **Painéis** — nome do bloco de operação, minúsculo: `quiz.html`, `lowerthirds.html`,
 `valores.html`. Agrupe por *quando o operador mexe*, não por qual gráfico é.
 
-**Assets** — uma pasta por peça em `graphics/assets/<categoria>/`, derivada do nome
+**Assets** — uma pasta por peça em `<assets>/<categoria>/`, derivada do nome
 do arquivo do Photoshop: **tudo minúsculo, cada palavra depois da primeira com
 inicial maiúscula**. Sigla não é exceção.
 
 ```
-L3_MetaLike.psd   →  graphics/assets/l3/l3_metaLike/
-FS_Contador.psd   →  graphics/assets/fs/fs_contador/
-FS_VS.psd         →  graphics/assets/fs/fs_vs/
-IG_OverlayMain.psd →  graphics/assets/ig/ig_overlayMain/
+L3_MetaLike.psd    →  <assets>/l3/l3_metaLike/
+FS_Contador.psd    →  <assets>/fs/fs_contador/
+FS_VS.psd          →  <assets>/fs/fs_vs/
+IG_OverlayMain.psd →  <assets>/ig/ig_overlayMain/
 ```
+
+`<assets>/` é a **pasta de assets servida do bundle**, e o padrão é `graphics/assets/` —
+`graphics` é campo declarado do manifesto, e a arte de uma peça pertence aos gráficos. O
+painel lê pela mesma URL; não há restrição entre os diretórios.
+
+Não confunda com as duas que parecem servir e não servem: **`shared/`** é *shared **source***
+(um módulo que dashboard e gráfico carregam) e nem aparece no manifesto; **`assetCategories`**
+é o sistema de upload pelo dashboard, em tempo de operação. Pra servir um diretório fora do
+trio, o caminho declarado é `nodecg.mount`. Detalhe em `references/drive-to-graphics.md` §2.
 
 A categoria é a sigla do tipo de peça, minúscula — `l3`, `fs`, `ig`, `bug`. O que
 cada uma quer dizer está em `references/psd-to-html/tipos-de-peca.md`.

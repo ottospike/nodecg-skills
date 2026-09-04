@@ -8,7 +8,7 @@ The folder carries the PSD's own name, extension stripped — `L3_Pergunta.psd` 
 `L3_Pergunta/` — so the manifest's `source` field and the folder always agree.
 
 ```
-graphics/assets/L3_Pergunta/
+<assets>/L3_Pergunta/
 ├── assets.json
 ├── ASSETS.md
 ├── plate_question.png

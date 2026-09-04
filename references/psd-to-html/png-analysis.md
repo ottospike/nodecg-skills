@@ -31,7 +31,7 @@ perguntas — as duas erram silenciosamente se você pular.
 
 Cada peça que entra e sai do ar sozinha vira **uma pasta**, com o nome da peça
 (`picks_bans/`, `map_picks/`, `versus/`). O `ANALISE.md` mora dentro dela, ao lado
-dos frames que o originaram. É a mesma regra de `graphics/assets/<peça>/` do bundle,
+dos frames que o originaram. É a mesma regra de `<assets>/<peça>/` do bundle,
 antecipada: quando os plates existirem, essa pasta vira aquela.
 
 Um documento gigante cobrindo dez peças não é consultável na hora de montar a
@@ -111,7 +111,7 @@ quatro vezes com nomes diferentes.
 ## 1. Medir
 
 ```bash
-python <skill>/scripts/analyze_png.py ARTE.png --out graphics/assets/<NomeDoPSD>
+python <skill>/scripts/analyze_png.py ARTE.png --out <assets>/<NomeDoPSD>
 ```
 
 Escreve `_analysis/report.json` e um recorte 1x + 3x de cada bloco. O `_` no nome
