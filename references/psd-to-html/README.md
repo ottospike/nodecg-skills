@@ -279,3 +279,31 @@ reference. Specific things that go wrong:
 When several plates share a row or column, check that their `x`/`y` line up in the manifest.
 Two cards on the same row must report the same `y`; if they don't, one of the specs grabbed a
 neighbouring layer.
+
+### Two mechanical guards, and the one thing neither catches
+
+Reading every PNG back is right but slow, and on a long batch attention is the first thing to
+go. Two checks run locally, cost nothing, and caught five wrong exports in one 44-plate batch —
+three wrong-document, two one-step-stale.
+
+**1. Geometric containment**, for a plate that is cropped to less than the canvas. Take the
+union of the kept layers' bboxes from psd-tools, and require the exported alpha bbox to sit
+*inside* it, plus a slack of ~24px for stroke and glow. **Containment, not equality**: a
+clipping mask makes the render much *smaller* than the union — a group whose smart objects bleed
+to `-1138,-458,3493,3783` renders as a 1920×226 bar, and demanding equality there produces a
+false rejection on every masked group. What denounces a wrong document is the render landing
+*outside* the union.
+
+**2. Correlation against the designer's own flat**, for a plate that fills the canvas. The
+geometric guard is blind here — two different pieces both report `0,0,1920,1080`. Downscale both
+the plate and that piece's `_reference.png` and compare, **only where the plate is opaque**:
+where it is transparent (a camera-frame's video window) the flat shows the mockup, and that
+difference is the product, not an error. Measured separation is enormous: the right piece scores
+a mean channel error of 1–7, the wrong piece 90. Masking by alpha matters — unmasked, the five
+camera-frame plates scored 74–178 and looked like failures.
+
+**Neither guard sees baked placeholder text.** A lower third exported with `NICKNAME` still on
+it has the same bbox as the clean one — the text sits *inside* the bar — and correlates fine
+against a flat that also shows the placeholder. That one only fell to a human look at a contact
+sheet. So the guards are what let you look *once per piece* instead of once per plate; they are
+not what lets you skip looking.

@@ -119,6 +119,47 @@ silently releases (`extendscript-gotchas.md`).
 Reach for `export_plates.jsx` when you actually need to synthesize a state the designer drew
 once; reach for this when you are only cutting apart what is already there.
 
+## Running a long batch: the bridge degrades, and it lies while degrading
+
+Measured over one night, extracting 44 plates from 21 PSDs in a single browser session. None of
+these is rare — each happened repeatedly, and each is silent.
+
+**The export returns the PREVIOUS composition.** Set visibility, export, and you get the frame
+from before the toggle. It is a consistent one-step lag, not a race: on one piece, plate 3 came
+out with plate 2's art and plate 4 with plate 3's. Touching `activeLayer` inside the same script
+is *not* enough. What fixes it is **a separate round-trip between the toggle and the export** —
+any trivial `photopea_run_script` will do. Three calls per plate, and the third is a `ping`.
+
+**`photopea_open_file` reports success without opening, and reports a timeout after opening.**
+Both directions happen. Never trust the return value: probe afterwards
+(`app.documents.length`, then the layer count) and re-open if it is 0. A `loadFile timed out`
+often means the document *did* land — probe before retrying, or you end up with two copies open.
+
+**`app.documents.length` disagrees with itself between consecutive calls.** Two reads seconds
+apart returned 2 and then 0, with no close in between; another pair returned the layer names of
+two *different* documents. This is the stale-bridge condition `psd-tools-fallback.md` warns
+about, and the guidance there — stop, do not mutate — is right, but a long batch cannot stop at
+every flicker. The way through is to stop asking the bridge who it is and verify the *output*
+instead: see the two guards in `README.md`, "Verifying".
+
+**Walking the layer tree in a loop times out; direct indexed writes do not.** On an 86 MB PSD, a
+loop over 11 top-level layers building strings blew the 30s limit, while
+`d.layers[2].visible = false` on three layers returned instantly. Two consequences: keep the
+visibility script as short as possible, and **do not descend into a group you are keeping
+whole** — recursion into a kept group is pure cost, and it is what actually exhausts the timeout.
+
+**The bridge exhausts, and closing every document revives it.** After roughly twenty heavy PSDs
+loaded and closed, timeouts stop being occasional and `photopea_export_image` starts returning
+`data ... Received null`. The recovery that works is
+`while (app.documents.length) app.activeDocument.close(SaveOptions.DONOTSAVECHANGES)` — after
+which scripts answer normally again. Past a certain point even that stops helping and the tab
+itself needs a reload; if you are automating unattended, **budget for that** and checkpoint your
+progress to disk (a `_geo.json` per piece with the measured coordinates) so the batch is
+resumable instead of restartable.
+
+**A `null` write is usually transient.** Re-issuing the same `photopea_export_image` succeeds
+most of the time. Two failures in a row mean the bridge needs the close-all above.
+
 ## Exporting plates — one per call
 
 `photopea_export_image` flattens and exports **the whole active document**. There is no
