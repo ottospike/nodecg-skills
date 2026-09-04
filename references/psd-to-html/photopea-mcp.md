@@ -160,6 +160,49 @@ resumable instead of restartable.
 **A `null` write is usually transient.** Re-issuing the same `photopea_export_image` succeeds
 most of the time. Two failures in a row mean the bridge needs the close-all above.
 
+## The Stroke is part of the fill, and that silently destroys plates
+
+This is the worst thing in this document, because it produces a plate that opens fine, passes
+both guards in `README.md`, and is simply missing artwork. Photopea's flatten treats a shape's
+**Stroke as part of its fill**, so the layer's fill opacity is applied to the outline too. Two
+failure modes, both measured here:
+
+| `fillOpacity` | what you get |
+|---|---|
+| `0` (a stroke-only shape) | **the shape vanishes entirely** |
+| between 0 and 255 | the outline comes out at *that* opacity |
+
+Neither is hypothetical. A fullscreen's two 5px window borders were stroke-only, so the export
+lost them and its two video windows merged into one L-shaped hole — 7976 white and 4375 yellow
+pixels gone, and the piece still measured `0,0,1920,1080` and correlated at 3.03 against the
+designer's flat. A meter's track had `fillOpacity: 77`, so its opaque 5px black contour came out
+at alpha 77: **zero opaque pixels in the file**, an outline that is invisible over video. In a
+visual language built on heavy black contour, both are unusable.
+
+**Audit before you trust an export**, straight from the PSD:
+
+```python
+tb = layer.tagged_blocks
+v = tb.get(b"iOpa")            # BYTES key — "iOpa" as a str never matches, and
+                               # tagged_blocks keys are Tag enum members, not strings
+fill = 255 if v is None else (getattr(v, "data", v))[0]   # TaggedBlock -> .data
+risco = layer.stroke and layer.stroke.enabled and fill < 255
+```
+
+Getting that reader wrong fails *quiet*: a `"iOpa" in tb` test returns False for every layer, so
+the audit prints "0 at risk" and you believe it. Verify the reader against a layer you have
+already measured through the bridge before believing a clean result.
+
+**The fix, for both modes.** Re-export the layer with `fillOpacity = 100` to get the solid
+silhouette, derive the stroke ring morphologically, and recomposite it at alpha 255. Take the
+width and colour from the descriptor — `layer.stroke.line_width` and `layer.stroke.content` —
+and never sample them from the flat: on a camera frame the window interior is white in the flat
+and so is the border, so a colour fit happily grows the ring inward forever. For a **centered**
+stroke of width `w` the ring straddles the path: `dilate(sil, ceil(w/2)) & ~erode(sil, floor(w/2))`.
+
+⚠️ **`fillOpacity = 0` does not isolate the stroke** — it erases the layer. There is no export
+that gives you the outline alone; you have to rebuild it.
+
 ## Exporting plates — one per call
 
 `photopea_export_image` flattens and exports **the whole active document**. There is no
