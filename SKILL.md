@@ -362,6 +362,27 @@ Template completo em `assets/grafico-modelo.html`. As seis invariantes:
    o guard derruba junto tudo que a outra fonte trouxe. O sintoma aparece longe da
    causa: "o placar não atualiza" quando o problema é o painel de draft fechado.
 
+   **E o mesmo vale no painel, com uma variante pior: o replicant PARCIAL.** Um
+   guard `if (!v) return;` cobre o valor ausente, mas deixa passar o objeto que
+   existe e perdeu um campo — e aí a primeira linha que faz `v.a.sigla` estoura, o
+   `pintar()` morre ali, e **nada abaixo é desenhado**. Num painel de vários
+   blocos isso derruba os outros blocos inteiros: o painel congela com o conteúdo
+   anterior, os botões param de refletir o ar, e nada na tela diz o que houve.
+
+   Desestruture com default em vez de confiar na forma:
+
+   ```js
+   const v = REP.value;
+   if (!v) return;
+   const a = v.a || {}, b = v.b || {}, placar = v.placar || { a: 0, b: 0 };
+   ```
+
+   Não é hipotético: basta uma escrita que leia `.value` **antes de o replicant
+   sincronizar** para reduzir o objeto a um campo só. Handle recém-criado tem
+   `.value === undefined`, e `Object.assign({}, undefined, { x: 1 })` é `{x: 1}` —
+   o resto do estado evapora sem erro nenhum. Espere o primeiro `change` antes de
+   escrever a partir do valor atual.
+
 ### 🚨 O `x/y/w/h` da plate não é o tamanho do arquivo
 
 Antes de ancorar qualquer plate, **confira o tamanho do PNG**. Existem duas
