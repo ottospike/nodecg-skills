@@ -126,6 +126,12 @@ mesmo que 80% do CSS se repita.
 
 - `lt_*` → lower third, entra/sai por animação própria (`lt_single.html`)
 - `fs_*` → fullscreen (`fs_pergunta.html`, `fs_contador.html`)
+
+O critério é **quem anima**, não quanto do quadro a peça ocupa. Uma peça que
+cobre a metade de baixo do quadro e entra pela própria timeline é `lt_`, não
+`fs_` — num bundle real uma delas ficou anos com o prefixo errado, e o custo é
+que `fs_` PROMETE que quem transiciona é o vMix. Quem for ligar a peça procura
+uma cena no switcher que não existe.
 - sem prefixo → peça que fica no ar por longos trechos (`bug.html`, `chat.html`)
 
 O nome descreve **a peça**, não a posição dela no roteiro. Numeração de bloco muda
