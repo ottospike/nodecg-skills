@@ -567,6 +567,71 @@ Regras que valem mais que o layout:
   `<button disabled title="Sem asset no vMix">`. Sumir esconde a lacuna.
 - Saída de emergência fica sempre clicável (o RESET do contador).
 
+### As três armadilhas do formulário que sincroniza
+
+Todo painel de "preparar valor" tem o mesmo miolo: `lerForm()` lê a tela,
+`doEstado()` lê o replicant, `difere()` compara, e `pintar()` sincroniza o form
+quando o operador não está mexendo. As três armadilhas abaixo apareceram juntas
+num bundle real, e **nenhuma delas aparece na leitura do código nem no
+`node --check`** — só com o dashboard aberto e dado guardado no replicant.
+
+**1. `!difere()` não é "o operador não mexeu".** O guard óbvio está errado:
+
+```js
+if (!emFoco() && !difere()) { /* popula o form */ }   // ERRADO
+```
+
+Na primeira pintura o replicant é `undefined`, o form vazio bate com o estado
+vazio, e ele popula vazio. Quando o valor real chega, `difere()` vira `true` e o
+form **nunca mais carrega**. O painel mostra tudo em branco com dado guardado
+atrás, diz "pendente", e **o SETAR apaga o que estava lá**.
+
+O guard confunde "o operador está digitando" com "o form ainda não carregou".
+Separe com uma flag explícita, marcada no `input` e limpa no SETAR:
+
+```js
+let tocado = false;
+el.addEventListener("input", () => { tocado = true; pintar(); });
+// ...
+if (!emFoco() && !tocado) { /* popula */ }
+```
+
+Isso conserta junto a outra metade do mesmo bug: os botões **"Puxar do…"**
+escrevem o replicant direto, e com o guard antigo o form não mostrava o que
+tinha sido puxado.
+
+**2. `JSON.stringify` é sensível à ordem das chaves.** `lerForm()` monta o objeto
+na ordem em que os campos aparecem na tela; `doEstado()` monta na ordem em que o
+replicant guarda. Conteúdo idêntico, string diferente, `difere()`
+**permanentemente `true`**.
+
+O sintoma é traiçoeiro porque quebra justamente os **dois sinais que dizem ao
+operador o que já está no ar**: o "pendente" nunca sai e o SETAR nunca
+desabilita. Compare com as chaves ordenadas:
+
+```js
+function estavel(v) {
+  if (Array.isArray(v)) return v.map(estavel);
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const k of Object.keys(v).sort()) o[k] = estavel(v[k]);
+    return o;
+  }
+  return v;
+}
+const difere = () => JSON.stringify(estavel(lerForm())) !== JSON.stringify(estavel(doEstado()));
+```
+
+**3. Sincronize o form ANTES de calcular botão e status.** `difere()` lê o DOM.
+Se o estado do SETAR for calculado no topo do `pintar()`, ele lê o form velho —
+ainda vazio na primeira pintura — e **nasce habilitado sobre dado que já está no
+ar**. Um clique distraído ali regrava o que o painel nem chegou a mostrar.
+
+Como pegar as três: abra o dashboard com o replicant **já preenchido** e confira
+que o form carregou, que o "pendente" some, e que o SETAR está desabilitado. Fora
+do dashboard não adianta — o `nodecg` nem existe numa aba solta, e o painel
+morre no primeiro `Replicant()`.
+
 No `package.json`, registre o painel com `width` em colunas e **explique a escolha
 num campo `_width`** ao lado — a largura foi decidida olhando o conteúdo real, e sem
 a nota o próximo a mexer desfaz sem saber:
@@ -874,6 +939,8 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] linka o CSS do dashboard; zero CSS próprio
 - [ ] blocos em `.sechd` / `.campo` / `.barra` / `.status`
 - [ ] PLAY/OUT desabilitados conforme o ar; SETAR desabilitado quando limpo
+- [ ] **abriu o dashboard com o replicant JÁ preenchido**: o form carregou, o
+      "pendente" sumiu e o SETAR está desabilitado (as três armadilhas do §8)
 - [ ] **o painel sobe sem rede**: montar linhas e assinar replicant fora de qualquer promise
 - [ ] toda promise de asset tem `.catch` com `nodecg.log.error`
 - [ ] replicants declarados aqui com `defaultValue` (não na extension)

@@ -208,3 +208,29 @@ window.testOut = () => sair();
 
 E confira o replay: `test()` → `testOut()` → `test()`. Se a segunda entrada não
 animar igual à primeira, falta `set` no topo da timeline.
+
+---
+
+## Padronizar: só o movimento-líder
+
+Numa auditoria de um bundle com 12 peças animadas apareceram **11 durações e 11
+eases distintos de entrada, e zero tokens** — todo valor literal inline. A saída
+estava bem mais disciplinada (o mesmo ease em 7 de 8 peças), o que é o padrão:
+ninguém pensa muito na saída, então ela sai consistente por inércia.
+
+O erro seria uniformizar tudo. Uma peça anima em camadas com **verbos
+diferentes**:
+
+- o **movimento-líder** — a barra que entra, a placa que desliza. É o que dá a
+  assinatura do programa, e é ele que precisa ser igual em todas as peças.
+- os **tweens de acento** — o selo que dá pop com `back.out`, o texto que sobe
+  com stagger. Esses acompanham a geometria de cada arte e têm razão para variar.
+
+Padronize o primeiro, deixe os segundos em paz. Na prática: escolha o valor que
+**a maioria das peças já usa** em vez de inventar um número novo — num caso real,
+5 de 12 peças já concordavam sozinhas, e alinhar as outras custou 7 linhas em 4
+arquivos.
+
+E não force o token de slide numa peça cujo verbo é outro. Uma peça que entra por
+`clip-path` ou por push-up com stagger não é um slide mais lento: padronizar o
+número dela seria padronizar o número errado.
