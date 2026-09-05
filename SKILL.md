@@ -356,6 +356,25 @@ Template completo em `assets/grafico-modelo.html`. As seis invariantes:
    o guard derruba junto tudo que a outra fonte trouxe. O sintoma aparece longe da
    causa: "o placar não atualiza" quando o problema é o painel de draft fechado.
 
+### 🚨 O `x/y/w/h` da plate não é o tamanho do arquivo
+
+Antes de ancorar qualquer plate, **confira o tamanho do PNG**. Existem duas
+convenções de export e elas pedem CSS oposto:
+
+| Export | O `x/y/w/h` do manifesto é | Como ancorar |
+|---|---|---|
+| **recortado** (o PNG tem o tamanho da arte) | a geometria do arquivo | `left/top/width/height` direto |
+| **frame cheio** (o PNG é 1920×1080) | o bbox da arte **dentro** do arquivo | `left:0; top:0; width:1920px; height:1080px` |
+
+Ancorar um PNG de frame cheio no bbox **espreme o canvas inteiro naquela caixa** —
+num caso real o bloco de placar virou uma tira de 4px, e o sintoma não parece
+geometria: parece que a plate exportou errado.
+
+A divergência aparece sozinha quando o export muda de caminho no meio do projeto
+(um recorta, outro salva o documento inteiro). Por isso o manifesto tem que
+declarar a convenção da pasta **e** o tamanho real de cada arquivo, e não deixar
+isso para quem for escrever o gráfico descobrir renderizando.
+
 ### Imagem: PRELOAD antes do ar, e fallback sempre
 
 **Nunca um `<img>` cru, e nunca `background-image` direto no CSS para conteúdo.**
