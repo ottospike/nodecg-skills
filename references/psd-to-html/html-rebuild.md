@@ -49,6 +49,44 @@ glyph bounds and don't include the leading the design implies:
 .field.center { justify-content: center; text-align: center; }
 ```
 
+### …but NOT on a field that auto-fits
+
+`align-items: center` is only safe while the type size is fixed. The moment the field
+auto-fits, the recipe above becomes a bug: the box keeps its fixed height, the line box
+shrinks with the font, and flex re-centres it — so **the baseline drifts down as the text
+gets longer**. The error is not a constant you can offset away.
+
+Measured on a real lower third: the name sat 2.26px low at full size (baseline 978.70 vs
+the manifest's 976.44), and 8.9px low at the auto-fit floor. Nobody notices on a short
+name, and it looks broken on a long one.
+
+The PSD anchors point text by its **baseline** — the box in the manifest is derived from
+it, not the other way round. So anchor by the baseline too:
+
+```css
+.field { display: flex; align-items: flex-start; justify-content: center; }
+```
+
+```js
+const r = MEDIDA.ajustar(el, { max, min, vao, rotulo });
+/* AFTER the fit, never before: the baseline moves with the size, so
+   re-anchoring first would anchor by the wrong body. */
+el.style.top = MEDIDA.topoParaBaseline(BASELINE_LOCAL, r.tam, familia, peso, 1) + "px";
+```
+
+`BASELINE_LOCAL` is the manifest's `baselineCanvas.y` minus the top of whatever the field
+is positioned against — not minus the stage.
+
+Two things that cost real debugging here:
+
+- **Declare `align-items` once.** Adding `flex-start` at the top of a rule that already
+  says `center` further down does nothing — last declaration wins, and the computed style
+  still reads `center`. Check `getComputedStyle(el).alignItems`, don't assume the edit took.
+- **`getBoundingClientRect()` on a Range gives the LINE BOX, not the ink.** Comparing it
+  against a PSD's glyph bounds compares two different things (52px vs 34px on the same
+  text). For real ink use canvas `measureText`: `actualBoundingBoxAscent/Descent` for the
+  glyphs, `fontBoundingBoxAscent/Descent` for the em box the baseline sits in.
+
 Load the design's real fonts with `@font-face` and `font-display: swap`. Two things bite here:
 font filenames containing spaces fail to load over a NodeCG-style URL (rename to no-space), and
 a PostScript name like `Inter-SemiBold` is a *separate file*, not `font-weight: 600` applied to
