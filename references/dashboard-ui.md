@@ -22,7 +22,13 @@ valendo.
 --danger  #A11F1F   OUT
 --r       4px       raio
 --h-ctl   28px      ALTURA de todo controle de linha: input, select, botão de ação
+--h-tecla 42px      ALTURA de tecla isolada: PLAY/OUT, grade de cenas
 ```
+
+**Dois tokens de altura, e a escolha vem do vizinho.** Botão que divide a linha com
+um input usa `--h-ctl` — senão a linha não bate. Botão de ação isolado usa
+`--h-tecla`: tecla larga e baixa lê como barra, não como alvo. Aumentar só a largura
+não resolve; o que o operador percebe é a proporção.
 
 **Puxe as cores do `assets.json` da arte**, não do gosto: o painel do operador
 ficando na mesma paleta do que está no ar é o que faz ele reconhecer no painel a
@@ -92,6 +98,64 @@ ação, sem competir.
 - **Pílula em vez de checkbox nativo.** O controle do Chromium não aceita a
   linguagem visual do painel e o alvo de clique fica pequeno pra quem opera com o
   programa no ar.
+- **Rótulo de tecla é curto porque a tecla tem altura fixa.** Rótulo que quebra em
+  duas linhas vaza. Nome comprido vai no `title`, e a tabela de rótulos mora num
+  arquivo compartilhado — duas cópias divergem no primeiro rename.
+
+## Contraste se mede contra o fundo REAL, não contra o token
+
+`--muted` é calibrado contra UMA superfície. Aninhe uma caixa translúcida
+(`rgba(255,255,255,.04)`) sobre um fundo claro e o mesmo token cai para **1,02:1** —
+ilegível, e ninguém percebe até o operador reclamar de "baixa visibilidade".
+
+A correção não é clarear o token (isso estraga onde ele estava certo): é dar à caixa
+interna um fundo **opaco conhecido**, uma classe `.caixa` com a mesma cor de placa
+para a qual os tokens foram medidos. Quando aparecer a terceira cópia de
+`rgba(255,255,255,.04)` num painel, ela já é o bug.
+
+Mesma família: placeholder. O cinza que parece "apagado o suficiente" costuma ficar
+abaixo de 4,5:1 — meça.
+
+## `box-sizing: border-box` é uma decisão, não um default
+
+Ligar o reset global num dashboard que já existe **encolhe todo campo com padding de
+uma vez**. Se algum painel calibra largura em `calc(NNch + Xpx)` contando o padding
+por fora, ligar border-box quebra a calibração inteira em silêncio.
+
+Escolha um dos dois e escreva qual, com o porquê, no CSS. Se ficar com content-box:
+
+- **Nada de `width: 100%` em input com padding** — vaza da coluna. Numa coluna flex
+  ele já estica sozinho; basta não declarar largura.
+- **Anel de foco e contorno por `box-shadow`, nunca por `border`** — sombra não ocupa
+  layout, então o campo não muda de tamanho ao ganhar o anel.
+- **Sombra não ocupa layout, mas ocupa pixel.** Ao trocar caixa lisa por contorno,
+  revise as margens negativas: um `margin-top: -2px` que colava duas linhas passa a
+  puxar o anel de um campo por cima do outro, e por cima do rótulo acima.
+
+## Sugerir ou restringir: `datalist` e `select` não são intercambiáveis
+
+- **`<select>`** quando o valor TEM que existir no cadastro. Guarde a **chave**
+  (sigla, id), não o rótulo: o rótulo pode ser corrigido no cadastro depois, e um
+  rótulo congelado vira órfão.
+- **`<datalist>`** quando o valor pode ainda não estar cadastrado — um classificado
+  de fase anterior, um convidado. Travar ali impede montar antes de o cadastro
+  fechar; sugerir já resolve o erro real, que é a grafia divergente.
+
+⚠️ **`scrollWidth` não acusa truncamento em `<select>`** como acusa num `<input>`.
+Uma verificação automatizada dirá "nada cortado" enquanto a tela mostra
+`RED CANIDS KA`. Mostre a forma curta no rótulo da `<option>` e o nome inteiro no
+`title`; o `value` continua sendo a chave.
+
+## O painel mostra o número VIVO, não o que foi configurado
+
+Repetir a configuração ("meta: 500") é a forma mais fácil de o dashboard concordar
+consigo mesmo enquanto o ar diverge. Mostre o que a fonte devolve agora, com a
+configuração ao lado.
+
+Corolário: **painel que acompanha animação longa precisa tiquetear.** Um diagnóstico
+que só repinta em mudança de estado mostra `progresso: 0%` com a peça a 27% — e um
+painel que mente sobre progresso é pior que um painel sem progresso. Um `setInterval`
+de ~250ms enquanto roda, desligado no fim.
 
 ## Larguras de painel
 

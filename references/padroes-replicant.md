@@ -167,3 +167,47 @@ Um gráfico pode ler o replicant de outro para não duplicar informação — o 
 participante no bloco de valor vem do `DB_QUIZ`, que já sabe de quem é a pergunta
 no ar. É isso que impede o nome de um com o valor de outro. Não redigite o que
 outro replicant já sabe.
+
+Isso vale para o painel também: um painel de confronto oferece "Puxar do Ingame
+Setup" em vez de pedir os dois times de novo. E quando ele guarda a referência,
+guarda a **chave** (sigla, id), nunca o rótulo: o rótulo é corrigível no cadastro, e
+uma cópia congelada dele vira órfã na primeira correção.
+
+## 9. Mudou o FORMATO do valor? Apague o persistido — com o servidor PARADO
+
+`defaultValue` só vale quando NÃO existe valor persistido. Acrescentou um campo,
+renomeou outro, trocou array por objeto: o replicant velho continua valendo e o campo
+novo nasce `undefined` — sem erro, sem log, e o painel mostra branco.
+
+```sql
+DELETE FROM replicant WHERE namespace='<bundle>' AND name='DB_X';
+```
+
+⚠️ **Pare o NodeCG antes.** Com o servidor no ar ele tem o replicant em memória e
+regrava a forma antiga no shutdown — você apaga, reinicia, e o valor velho está lá de
+novo. Já custou um ciclo inteiro de debug em cima de nada.
+
+Ordem: parar → `DELETE` → subir.
+
+## 10. Verificar o caminho de dado sem abrir navegador
+
+`GET` na URL só prova que o arquivo é servido. O que interessa — a peça desenha, a
+animação anda, o texto cabe, o SETAR de fato gravou — só um browser responde. Um
+Chromium headless dirigido por CDP (`chrome-headless-shell --remote-debugging-port`,
+`Page.navigate` + `Runtime.evaluate` + `Page.captureScreenshot`) fecha o ciclo.
+
+Duas pegadinhas que custam meia hora cada:
+
+- **Painel servido pela URL normal NÃO recebe o objeto `nodecg`.** Quem injeta a API
+  é o dashboard, no iframe. Sozinho, o script do painel morre no
+  `nodecg is not defined` e a página fica só com o CSS — e o sintoma engana, porque
+  o HTTP é 200 e o layout aparece. Use **`?standalone=true`**, que é a rota de painel
+  que sobe com a API. (Gráfico não tem esse problema.)
+- **`const` e `let` de topo não viram propriedade de `window`.** No
+  `Runtime.evaluate`, referencie `DB_X` direto; `window.DB_X` é `undefined`, e a
+  mensagem de erro não diz por quê. Só `function` de topo e `var` aparecem em
+  `window`.
+
+Prove o caminho INTEIRO, não a metade que você suspeita: com o painel e o gráfico
+ambos verificados, o bug que sobra está no terceiro lugar — e foi assim que um
+"Setar não retira o time" virou um `tocado` que o botão Limpar não marcava.

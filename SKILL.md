@@ -36,6 +36,7 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | Animando entrada/saída, troca de conteúdo, stagger | `references/animacao-gsap.md` |
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
+| **Precisa PROVAR que funciona** (desenha? anima? cabe? gravou?) | `references/padroes-replicant.md` §10, verificação por CDP |
 | Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
 | **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
 | **O trabalho começa no Google Drive** — quais gráficos o projeto pede, baixar os PSDs, montar a estrutura de pastas | `references/drive-to-graphics.md` |
@@ -248,9 +249,16 @@ quer — mas isso é **decisão explícita e comentada**, nunca acidente.
 tela calcula o restante sozinha. Escrever um replicant por segundo enche o socket,
 faz o número pular com jitter, e para quando o painel fecha.
 
+**Mudou o FORMATO do valor, apague o persistido — com o servidor PARADO.** O valor
+velho vence o `defaultValue` novo, e o campo que você acabou de acrescentar nasce
+`undefined` sem erro nenhum. Com o NodeCG no ar ele tem o replicant em memória e
+regrava a forma antiga no shutdown: você apaga, reinicia, e está tudo como antes.
+Ordem: parar → `DELETE FROM replicant WHERE namespace=… AND name=…` → subir.
+
 Os padrões já resolvidos (liga/desliga, valor preparado + SETAR, fábrica pra blocos
-irmãos, relógio, seleção exclusiva, efeito colateral no servidor, dev mode) estão
-com código em `references/padroes-replicant.md`.
+irmãos, relógio, seleção exclusiva, efeito colateral no servidor, dev mode,
+migração de formato, verificação por CDP) estão com código em
+`references/padroes-replicant.md`.
 
 ---
 
@@ -552,6 +560,11 @@ Três armadilhas que já custaram debug:
 - **Troca de conteúdo no meio do movimento** (barn-door, flip): troque só o
   `.textContent` dos spans num layout fixo, não o `innerHTML` do bloco — recriar
   um `<img>` a cada tique pisca no ar.
+- **Devagar demais é indistinguível de quebrado.** Um rolo de créditos de 60s começa
+  atrás da borda mascarada e leva ~13s até o primeiro texto aparecer inteiro — e o
+  relato que chega é "dei play e não apareceu nada". Antes de debugar, calcule a
+  velocidade (px/s) e quanto tempo o primeiro elemento leva pra cruzar a máscara.
+  Se a peça só se prova depois de 10s, o problema é a duração, não o código.
 
 Os padrões fechados (wipe diagonal, reveal vertical com stagger, barn-door, flip,
 pushup) estão em `references/animacao-gsap.md`.
@@ -586,20 +599,49 @@ Regras que valem mais que o layout:
   não tem nada no ar. Isso responde mais rápido que qualquer texto.
 - **Não repita o que já está dito.** Se o botão aceso já responde "o que está no
   ar?", não escreva `.status` embaixo.
-- **Selo NO AR só quando o painel realmente sabe.** Se quem manda no ar é o vMix, o
-  selo mentiria — ele refletiria o que o painel pediu. Nesse caso, sem selo.
-- **Nunca sobrescreva campo em foco**: `if (document.activeElement !== campoEl)`.
-- **Uma altura só** para input, select e botão de linha (`--h-ctl`).
+- **Selo só diz o que o painel sabe.** Se quem manda no ar é o vMix, "NO AR"
+  mentiria. Duas saídas honestas: sem selo, ou um selo rotulado **PEDIDO** quando o
+  painel de fato disparou a cena. Não invente um terceiro estado.
+- **Uma cena, um botão.** Se a mesma cena aparece numa grade E num painel próprio, o
+  operador vai apertar a errada — e a errada costuma ser a que faz menos. Tire da
+  grade o que ganhou painel, com a lista num arquivo compartilhado. Se uma cena
+  precisa de dois efeitos (trocar no switcher e rodar a peça), o botão faz os dois.
+- **Nunca sobrescreva campo em foco** — e nem campo com trabalho não salvo. Foco
+  sozinho não basta: o operador tira o foco a hora que clica em qualquer lugar. As
+  quatro armadilhas do guard estão logo abaixo, em *As armadilhas do formulário que
+  sincroniza*.
+- **Duas alturas, escolhidas pelo vizinho**: `--h-ctl` para o que divide linha com um
+  input, `--h-tecla` para tecla isolada. Alargar um botão baixo não o torna alvo.
 - Controle sem asset correspondente fica **desabilitado com `title`**, não apagado:
   `<button disabled title="Sem asset no vMix">`. Sumir esconde a lacuna.
 - Saída de emergência fica sempre clicável (o RESET do contador).
+- **Conteúdo que muda uma vez por temporada mora no gráfico**, não num campo: a
+  hashtag do canal, a lista de créditos, a duração de um rolo. Campo editável ao vivo
+  para algo que ninguém muda ao vivo é superfície de erro sem contrapartida.
 
-### As três armadilhas do formulário que sincroniza
+**Imagem se resolve por NOME, não por URL.** Painel não pede caminho de arquivo:
+pede o nome (do time, do caster, do jogador) e um manifesto por pasta resolve. Duas
+regras que fazem isso funcionar:
+
+- **Sem arquivo declarado no manifesto, o resolvedor devolve `null`.** Não derive
+  `slug + ".png"`: derivar faz TODA entrada parecer que tem imagem, e a peça toma 404
+  no ar. Devolvendo `null` dá pra cadastrar alguém antes de a arte chegar, e o painel
+  avisa qual falta (`⚠ sem foto LOUD`, não "1 sem foto").
+- **Manifesto ausente não pode derrubar os outros.** Cada fetch com `.catch`; sem
+  isso uma pasta vazia rejeita o `Promise.all` e o painel perde selects que não têm
+  nada a ver com aquela pasta.
+
+**Linha criada depois de um `await` precisa reaplicar o estado.** O `change` do
+replicant chega ANTES de o DOM existir: o handler não acha o que preencher e nada
+tenta de novo. Quem monta linha dentro de um `.then` chama o repaint no fim — senão
+o painel mostra branco e o SETAR grava o branco por cima do que está no ar.
+
+### As armadilhas do formulário que sincroniza
 
 Todo painel de "preparar valor" tem o mesmo miolo: `lerForm()` lê a tela,
 `doEstado()` lê o replicant, `difere()` compara, e `pintar()` sincroniza o form
-quando o operador não está mexendo. As três armadilhas abaixo apareceram juntas
-num bundle real, e **nenhuma delas aparece na leitura do código nem no
+quando o operador não está mexendo. As armadilhas abaixo apareceram em bundle
+real, e **nenhuma delas aparece na leitura do código nem no
 `node --check`** — só com o dashboard aberto e dado guardado no replicant.
 
 **1. `!difere()` não é "o operador não mexeu".** O guard óbvio está errado:
@@ -654,10 +696,35 @@ Se o estado do SETAR for calculado no topo do `pintar()`, ele lê o form velho �
 ainda vazio na primeira pintura — e **nasce habilitado sobre dado que já está no
 ar**. Um clique distraído ali regrava o que o painel nem chegou a mostrar.
 
-Como pegar as três: abra o dashboard com o replicant **já preenchido** e confira
-que o form carregou, que o "pendente" some, e que o SETAR está desabilitado. Fora
-do dashboard não adianta — o `nodecg` nem existe numa aba solta, e o painel
-morre no primeiro `Replicant()`.
+**4. Quem mexe no form no lugar do operador liga `tocado` também.** Um botão
+"Limpar" que zera os campos e chama `pintar()` sem marcar a flag cai no próprio
+ramo de sincronização e **desfaz o que acabou de fazer**. E o guard de foco não
+salva: clique de mouse leva o foco pro botão, então `emFoco()` é `false`
+justamente ali.
+
+```js
+limparBt.addEventListener("click", () => {
+  campos().forEach((el) => (el.value = ""));
+  tocado = true;                 // ← sem isto, o pintar() abaixo repovoa tudo
+  pintar();
+});
+```
+
+O sintoma chega como duas reclamações que parecem de outra coisa: "o botão não
+faz nada" e "apaguei e o SETAR não retira". Vale pra qualquer preenchimento
+programático — "Limpar", "Puxar de…", autocompletar, importar roteiro.
+
+Como pegar as quatro: abra o painel com o replicant **já preenchido** e confira
+que o form carregou, que o "pendente" some, e que o SETAR está desabilitado.
+
+A URL solta do painel não serve — o `nodecg` não existe nela e o painel morre no
+primeiro `Replicant()`, com HTTP 200 e o CSS aplicado, o que engana. Use
+**`?standalone=true`**, a rota de painel que sobe com a API; ela também é o que
+permite dirigir o painel por CDP (ver `references/padroes-replicant.md` §10).
+
+⚠️ E **reproduza o gesto inteiro, foco incluído.** Um teste que dispara `.click()`
+por script não move o foco como o mouse move — é exatamente por isso que a
+armadilha 4 passa por um teste automatizado que parece correto.
 
 No `package.json`, registre o painel com `width` em colunas e **explique a escolha
 num campo `_width`** ao lado — a largura foi decidida olhando o conteúdo real, e sem
@@ -671,6 +738,15 @@ a nota o próximo a mexer desfaz sem saber:
 
 Todo gráfico também entra em `nodecg.graphics` com `width`/`height` iguais ao
 tamanho da arte.
+
+**Workspaces se numeram.** O NodeCG ordena as abas **alfabeticamente**, então
+`1. FULLSCREEN`, `2. LOWERTHIRDS`, `3. INGAME/DRAFT` põem as abas na ordem de uso do
+programa; sem o número elas saem em ordem de dicionário. Dois painéis que se
+alimentam um do outro (o draft que lê o time escolhido no confronto) ficam na MESMA
+aba — trocar de aba no meio de um draft é onde o operador erra.
+
+O workspace `main` **não pode ser renomeado**. A única forma de não ver essa aba é
+nenhum painel ficar sem `workspace`; deixe-a vazia de propósito e comente isso.
 
 ---
 
@@ -974,8 +1050,10 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] **uma escrita de replicant por handler** — função auxiliar que escreve conta como escrita
 - [ ] nada de escrita aninhada (`rep.value.a.b = x`); reatribui o objeto
 - [ ] dado preparado persiste, ar não persiste (dois replicants se a peça tem os dois)
-- [ ] não sobrescreve campo em foco
+- [ ] não sobrescreve campo em foco, e quem mexe no form liga `tocado`
 - [ ] `.status` só onde acrescenta
+- [ ] nenhuma cena tem dois botões
+- [ ] imagem resolvida por nome, e a ausência declarada (nunca derivada do slug)
 
 **Antes de dizer que está pronto**
 - [ ] **o repo está limpo**: screenshot, dump, venv e script de conferência foram
@@ -990,6 +1068,8 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] abri o gráfico com **só um** dos painéis carregado — ele ainda desenha o que tem
 - [ ] `node --check` na extension, se mexi nela
 - [ ] os comentários explicam os números e as decisões descartadas
+- [ ] só UMA instância do NodeCG está no ar (senão eu medi a antiga)
+- [ ] o que é visual eu **vi** — screenshot ou leitura de DOM por CDP, não só HTTP 200
 
 **O painel sobe sem rede.** Montar as linhas e assinar os replicants **nunca**
 mora dentro de `BS.carregar().then(...)` — nada disso precisa de manifest. Só o
@@ -1020,5 +1100,23 @@ para as mais raras. Todas já aconteceram:
 2. É **escrita aninhada** (`rep.value.a.b = x`)? Reatribua o objeto.
 3. O gráfico tem `return` cedo por uma **fonte ausente** que nem é a que mudou?
 4. O evento é `change` num `<input type="number">`? Ele só dispara no blur.
-5. O `bundle-manager` engoliu o reload com um `ENOENT` e o servidor está com a
+5. A linha do painel foi **criada depois de um `await`**, e o `change` chegou antes
+   dela existir? O handler não achou o que preencher e nada tentou de novo.
+6. Algum código mexeu no form sem ligar `tocado`, e o repaint seguinte **desfez**?
+7. O FORMATO do valor mudou e o **persistido velho** venceu o `defaultValue`?
+8. O `bundle-manager` engoliu o reload com um `ENOENT` e o servidor está com a
    versão antiga em memória?
+
+Depois da 3ª, pare de adivinhar e **prove cada elo separado** por CDP: semeie o
+replicant, leia o que o painel gravou, leia o que o gráfico desenhou. O elo que
+sobrar é o bug — e costuma não ser o que você suspeitava. (`references/padroes-replicant.md` §10;
+atenção ao `?standalone=true` do painel e ao fato de `const` de topo não virar
+propriedade de `window`.)
+
+**Cuidado com a sua própria verificação.** Um teste que dispara `.click()` por
+script não move o foco como o mouse move — e o bug de `tocado` acima passa
+despercebido justamente por isso. Reproduza o gesto inteiro, foco incluído.
+
+**Duas instâncias do NodeCG mentem.** Subir a segunda sem parar a primeira dá
+`EADDRINUSE`, e o que você continua medindo é o servidor VELHO. Confirme que só há
+uma antes de acreditar em qualquer resultado.
