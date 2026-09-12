@@ -116,6 +116,23 @@ de produção**. Planeje isso antes de uma transmissão, não durante.
 
 Healthcheck com `node -e` porque a imagem `slim` não tem `curl` nem `wget`.
 
+## 🚨 `host: "127.0.0.1"` no cfg = container de pé e domínio em 404
+
+É o erro que mais custa tempo, porque **o healthcheck passa**. Um
+`cfg/nodecg.json` com `"host": "127.0.0.1"` é o certo no laptop e o errado dentro
+de um container: ligado só ao loopback, o processo não aceita conexão de fora, e
+o Traefik não conecta. Mas o healthcheck do compose bate em `127.0.0.1` **de
+dentro** do container e responde 200 — então o Coolify mostra `healthy`, o
+domínio responde 404, e não há uma linha de log em lugar nenhum.
+
+Use `cfg/nodecg.js` lendo `NODECG_HOST` (ver abaixo) com default `127.0.0.1`, e
+passe `NODECG_HOST=0.0.0.0` no `environment` do compose. O mesmo repo serve os
+dois sem ninguém ter que lembrar de trocar nada.
+
+E **apague o `.json` ao criar o `.js`** — não renomeie mentalmente. Com os dois
+na pasta, qual vence depende da ordem de busca do cosmiconfig, e descobrir isso
+em produção é caro.
+
 ## `cfg/nodecg.js`: config que lê o ambiente
 
 O loader do NodeCG usa cosmiconfig e aceita `cfg/nodecg.js` (CommonJS) além do
@@ -182,6 +199,34 @@ curl -X PATCH -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/js
 **Coolify não move aplicação entre servidores.** Não há campo de destino no
 `update_application`: trocar de servidor é **deletar e recriar** o recurso — e refazer
 o registro DNS, porque o IP muda.
+
+**`docker_compose_location` tem que bater com o NOME DO ARQUIVO.** O default é
+`/docker-compose.yaml`. Um repo com `compose.yml` (o nome moderno) builda e sobe
+sem achar serviço nenhum. Passe `"docker_compose_location": "/compose.yml"` no
+create ou no PATCH.
+
+**`ports_exposes` nasce `80` e o create IGNORA o que você mandar.** Confira
+depois de criar e corrija por PATCH para a porta real (9090), senão o Traefik
+roteia para uma porta que ninguém escuta. O mesmo sintoma de sempre: container de
+pé, 404 no domínio.
+
+**Não existe `/api/v1/sources`.** Para criar app de repo privado você precisa do
+`github_app_uuid`, e o endpoint que lista é **`/api/v1/github-apps`** (404 em
+`/sources`, `/security/github-apps`, `/private-github-apps`). O campo
+`source_id` que vem no GET de uma aplicação existente é o **id numérico**, não o
+uuid — case o id na lista para achar o uuid. Jeito rápido de acertar tudo de uma
+vez: **leia um app irmão que já funciona** (`GET /api/v1/applications/<uuid>`) e
+copie `destination_id`, `environment_id`, `source_id` e o formato do domínio.
+
+**`github_app_uuid` errado devolve 404 "Github App not found"**, não erro de
+validação — então um uuid inventado parece problema de permissão.
+
+**Domínio novo precisa de registro DNS próprio se não houver wildcard.** Teste
+antes de prometer a URL: resolva um subdomínio que não existe
+(`zzz-qualquer.seudominio.com`). Se der `ENODATA`, cada subdomínio tem registro A
+manual e você não vai conseguir criar o seu. O `<uuid>.<ip>.sslip.io` que o
+Coolify devolve no create funciona na hora, sem DNS — sobe com ele e troque
+depois, em vez de entregar um domínio que não resolve.
 
 **`is_auto_deploy_enabled` não volta no GET.** A API aceita no PATCH e não devolve na
 leitura, então o estado só se audita pela UI. Cave isso explicitamente em vez de

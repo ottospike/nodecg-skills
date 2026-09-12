@@ -95,10 +95,45 @@ Vai pra extension só o que precisa de tempo de vida de servidor:
 | O servidor é quem publica o valor | `DB_DEVMODE` (vem do env/cfg) |
 | Tem que sobreviver ao painel fechado e a restart | `DB_CONTADOR` (relógio regressivo) |
 | A mudança dispara efeito colateral no servidor | `DB_FS` (extension traduz cena → comando vMix) |
+| **Mais de um arquivo declara, e só alguns passam `defaultValue`** | `DB_TIMES`, `DB_PARTIDA` — ver a corrida abaixo |
 
 O gráfico **nunca** declara `defaultValue`: `nodecg.Replicant("DB_X")` e pronto.
 Quem define o formato é quem controla o estado; o gráfico só desenha o que vier, e
 tem que aguentar `undefined` no primeiro change.
+
+### 🚨 A corrida de declaração — e por que ela só quebra em instalação NOVA
+
+**`defaultValue` só vale na CRIAÇÃO do replicant.** Quem declara primeiro define o
+formato; quem declara depois apenas se conecta, e o `defaultValue` que passar é
+**ignorado em silêncio**.
+
+Isso vira bug assim que um replicant é compartilhado. Num bundle real, dez
+arquivos declaravam `DB_TIMES` e só três passavam `defaultValue` — os outros sete
+(painéis e gráficos que só LEEM) declaravam pelado, como manda a regra acima. O
+dashboard carrega todo painel como **iframe, em paralelo**: qual chega primeiro é
+corrida. Com o painel leitor na frente do painel dono, o replicant nasce **sem
+valor**, e `DB_TIMES.value` fica `undefined` para sempre.
+
+O sintoma não aponta para cá: painel em branco, selects vazios nas peças que
+dependem dele, e **nada no log**. O `pintar()` sai no `if (!v) return` e pronto.
+
+**E some no laptop.** Lá o banco já tem o replicant gravado de uso anterior,
+então o valor vem da persistência e a corrida não decide nada. O volume de
+produção nasce vazio — é no primeiro deploy que quebra, que é a pior hora.
+
+A saída é declarar na **extension**, que roda no boot do servidor antes de
+existir cliente: a criação vira determinística e os dez declarantes viram
+leitores. É o mesmo motivo pelo qual um `DB_FS` já declarado lá nunca sofreu
+disso.
+
+Regra prática: **se dois ou mais arquivos declaram o mesmo replicant e a peça não
+funciona sem valor, ele pertence à extension** — mesmo não tendo efeito colateral
+de servidor. Auditar é um `grep`:
+
+```bash
+grep -rn 'Replicant("DB_X"' dashboard/ graphics/ extension/
+# se aparecer mais de um E nem todos com defaultValue, você tem a corrida
+```
 
 **Mexer no `package.json` exige restart completo do NodeCG.** Editar HTML de
 dashboard ou de graphic só pede hard-refresh do navegador. Valide edição de
@@ -494,7 +529,7 @@ Texto dentro de plate de largura fixa **precisa de auto-fit**: reduza o corpo
 até caber, com piso — e quando estourar o piso, `nodecg.log.warn` e deixa passar.
 Cortar o nome de alguém no meio é pior que passar 2px da arte.
 
-**Mas a medição é uma armadilha de quatro camadas, e as quatro passam em teste.**
+**Mas a medição é uma armadilha de cinco camadas, e as cinco passam em teste.**
 Não improvise aqui:
 
 | Medindo com | O que acontece |
@@ -502,11 +537,46 @@ Não improvise aqui:
 | `getBoundingClientRect().width` | devolve a **caixa**. Com largura fixa é sempre o mesmo número: o laço nunca reduz e o texto vaza em silêncio |
 | `scrollWidth` contra uma constante subpixel | é `max(conteúdo, caixa)` **arredondado pra inteiro**: numa caixa de 327,2 devolve 328 até vazio → "sempre estourando", e o laço corre até o piso. A peça fica **sempre no menor corpo** e ninguém desconfia |
 | `scrollWidth > clientWidth` | **correto** (inteiro contra inteiro), e é o que usar quando não precisa de fração |
+| **`Range` sobre texto com `text-transform`** | mede o **texto-fonte**, antes da transformação. Ver o bloco abaixo — é o pior dos cinco |
 | `document.fonts.ready` antes de medir | resolve **na hora** quando o texto está vazio — que é como um gráfico nasce (o estado vem do replicant depois). Mede na fallback, escolhe corpo grande, a face real entra e vaza |
 | `document.fonts.check(face)` | devolve **`true` pra fonte que não existe**: a pergunta dele é "dá pra renderizar?", e a fallback sempre dá. Passa exatamente no caso que deveria pegar |
 
+### 🚨 `Range` + `text-transform: uppercase` = medida 18% menor, e sempre pra baixo
+
+`Range.selectNodeContents()` + `getClientRects()` mede os glifos do **conteúdo do
+nó de texto**, não os que o navegador pinta. Quando a caixa-alta vem do CSS e o
+DOM está em caixa mista, ele mede a string minúscula — que é bem mais estreita.
+Medido num nome de time, Akira Expanded:
+
+```
+"Ninguém Segura" a 53,69px, caixa de 657px
+  Range.getClientRects() ....... 538,5px    ← o que eu media
+  canvas.measureText(UPPER) .... 654,2px    ← o que o Chrome pinta
+  scrollWidth .................. concorda com o canvas
+```
+
+115px de erro, e **sempre para baixo** — o lado perigoso: faz passar no teste
+exatamente o texto que deveria reprovar. Num auditor de layout isso não dá falso
+alarme, dá **falso silêncio**.
+
+Duas saídas, e as duas valem:
+
+- **medir com `canvas.measureText`, aplicando a transformação você mesmo**
+  (`cs.textTransform === "uppercase" ? txt.toUpperCase() : txt`, com
+  `c.font` montado de `fontStyle/fontWeight/fontSize/fontFamily`);
+- **ou fazer o JS gravar o texto já em caixa alta** (`el.textContent =
+  nome.toUpperCase()`) e deixar o `text-transform` como redundância. Aí o DOM e
+  o pintado coincidem e o `Range` volta a ser confiável.
+
+A segunda é a que os bundles já fazem na maioria das peças, e é por isso que a
+armadilha fica escondida: ela só aparece nas peças onde o CSS sobe a caixa
+sozinho. **Antes de confiar num `Range`, pergunte se o DOM já está na caixa
+final.** `grep` de `text-transform` cruzado com `toUpperCase()` separa as duas
+famílias em segundos.
+
 O que funciona: **`Range` sobre os filhos** (`selectNodeContents`) pra medir o
-conteúdo com fração; **`status === "loaded"` da FontFace** em `document.fonts` pra
+conteúdo com fração — **desde que o DOM já esteja na caixa final**, senão use
+canvas; **`status === "loaded"` da FontFace** em `document.fonts` pra
 saber se a face existe de verdade; **`rel=preload as=font crossorigin`** no
 `<head>` pra encurtar a janela; e o refit reagendado por **promessa**, não por
 evento — `loadingdone` dispara antes do conteúdo chegar e não há segunda chance.
@@ -516,6 +586,74 @@ evento — `loadingdone` dispara antes do conteúdo chegar e não há segunda ch
 sempre passa. E **render headless com `--virtual-time-budget` não serve** pra
 testar isso: ele queima o orçamento de espera em tempo virtual enquanto o fetch
 real está em voo, e acusa falha com o código correto.
+
+### A caixa do PSD pode ser MAIOR que o vão que a peça tem de verdade
+
+O auto-fit mede contra a caixa que você deu a ele. Se essa caixa passa **por
+baixo de outra plate**, ele conclui que cabe e não avisa nada — e o texto vai ao
+ar **coberto**, não vazado. Não há erro, não há log, e a tela de dev diz que
+está tudo certo.
+
+Aconteceu assim: a caixa do nome veio do placeholder do PSD (`TEAM NAME`, 224px
+de largura), que é curto e nunca chegou perto da borda. Medindo o render, a
+placa ia de x=700 a 1220, mas os slots de ban ocupavam 596..746 e 1174..1324 e
+**pintavam por cima dela** — o amarelo livre era 746..1174. As duas caixas de
+224px enfiavam 14px cada uma sob um ban. Um nome longo parava no corpo que
+"cabia" nos 224 e perdia a última letra atrás da arte vizinha.
+
+**Derive o vão do que está PINTADO, não do placeholder.** Na prática: meça o
+bbox das plates vizinhas na altura da linha de texto e use a menor distância até
+o primeiro obstáculo. Um bundle que faz isso direito documenta o número assim —
+`nomeA = 2 × (790 − 461,29) = 657,42 (aperta a estrela)`.
+
+E quando for auditar, a pergunta certa não é "o texto passou da caixa CSS?", é
+**"o que está pintado embaixo das pontas da tinta?"**. `document.elementsFromPoint`
+nas extremidades responde: se só houver stage e body, o texto está no vazio; se
+houver uma plate que vem DEPOIS na ordem de pilha, ele está coberto.
+
+### Palavra única não quebra — e `overflow-wrap: anywhere` estraga o auto-fit
+
+Nome com espaço cai em duas linhas sozinho. Palavra única não tem onde quebrar,
+então só o corpo cede: num caso real `QuieroQueQue` desceu a 19,4px ao lado de
+`OCX DIVISION` em 28,9 — os dois lados da mesma placa com corpos diferentes, que
+é o que lê como quebrado.
+
+⚠️ **Não resolva com `overflow-wrap: anywhere`.** O auto-fit começa no corpo
+máximo e aceita a primeira medida que couber; com quebra em qualquer ponto,
+`GORDITOS` parte como `GORDI/TOS` já no corpo cheio, **passa no teste** e sai
+errado no ar.
+
+A grafia costuma dizer onde quebrar: a **maiúscula interna**. Insira
+`U+200B` (zero-width space) em `[a-z0-9][A-Z]` e o navegador usa a oportunidade
+só quando precisa:
+
+```js
+function comQuebras(nome) {
+  return String(nome == null ? "" : nome)
+    .replace(/([a-z0-9])([A-Z])/g, "$1​$2")
+    .toUpperCase();   // DEPOIS: toUpperCase() destrói a caixa que marca o ponto
+}
+```
+
+A ordem importa — subir a caixa antes apaga a informação que você ia usar. E
+lembre de tirar o `U+200B` de qualquer string que você mostre na tela de dev ou
+compare com `===`.
+
+### Cobrir a franja da moldura, não só o miolo
+
+Ao encaixar uma imagem dentro de um frame recortado, o miolo "branco puro" **não
+é** o limite: existe uma franja de antialiasing de 1px que o teste de cor não
+pega. Medido num slot de 150×150 — miolo branco em 4..145, com franja em x=3
+(195,195,195) e x=146 (120,120,120).
+
+Encaixar em `4/142` deixa a franja clara da esquerda exposta: no ar é um fio
+claro vertical em cada slot, em todos ao mesmo tempo. Cobrir só um lado (`3` +
+143) resolve metade. O certo é **3..146 nos quatro lados** (`left/top: 3`,
+`144×144`), aceitando 1px a menos de antialiasing na moldura — o contorno mantém
+os píxeis chapados, e o que se perde é a meia-tinta da curva.
+
+Meça a franja, não confie no limiar: `>245` acha o miolo, `>200` já pega parte
+da franja, e a diferença entre os dois é exatamente o fio que aparece no ar.
 
 Implementação de referência: `graphics/utils/medida.js` no bundle da LEAGUETV.
 
@@ -630,6 +768,32 @@ regras que fazem isso funcionar:
 - **Manifesto ausente não pode derrubar os outros.** Cada fetch com `.catch`; sem
   isso uma pasta vazia rejeita o `Promise.all` e o painel perde selects que não têm
   nada a ver com aquela pasta.
+- 🚨 **Fallback dentro do resolvedor CEGA o painel.** Um resolvedor genérico que,
+  não achando o campo pedido, cai no campo principal (`foto` → `png`) nunca
+  devolve `null` — e aí o `!BS.fotoX(...)` do painel é **sempre falso**. O aviso
+  "⚠ sem foto" vira decoração: ele não dispara nem quando a arte de fato não
+  existe. Num bundle real isso ficou dois meses assim, e o mesmo fallback ainda
+  punha um escudo quadrado esticado no slot de uma figura de corpo inteiro.
+  Campo secundário quer **resolvedor próprio, sem fallback**; quem escolhe o
+  degrau seguinte é a peça, explicitamente.
+
+### O resolvedor diz a verdade; a PEÇA decide o que desenhar
+
+Quando existir um genérico (silhueta, placeholder, "sem foto"), a tentação é
+devolvê-lo do resolvedor. **Não faça** — é o mesmo defeito acima com outra
+roupa: todo nome passa a parecer que tem arte, o painel cala, e a única forma de
+descobrir que faltava é ver a silhueta no ar.
+
+Divisão que funciona: o resolvedor responde *"existe arte desta pessoa?"* e
+devolve `null` quando não; a peça responde *"o que eu desenho quando não
+existe?"*, passando o genérico como `fallback` do pintor de imagem. Só a peça tem
+contexto para a segunda pergunta — um slot **sem nick nenhum** não leva
+silhueta, senão ela inventa um jogador que não existe, enquanto um slot **com
+nick e sem foto** leva.
+
+O genérico entra no manifesto como chave de topo (fora de `itens`), resolvido por
+uma função separada — nunca indexado pelo nome, para ninguém achá-lo procurando
+uma pessoa.
 
 **Linha criada depois de um `await` precisa reaplicar o estado.** O `change` do
 replicant chega ANTES de o DOM existir: o handler não acha o que preencher e nada
@@ -1116,6 +1280,25 @@ propriedade de `window`.)
 **Cuidado com a sua própria verificação.** Um teste que dispara `.click()` por
 script não move o foco como o mouse move — e o bug de `tocado` acima passa
 despercebido justamente por isso. Reproduza o gesto inteiro, foco incluído.
+
+**🚨 Verificação vazia PASSA. Conte o que você examinou.** Um auditor que varre a
+página procurando defeito e devolve lista vazia diz duas coisas ao mesmo tempo —
+"está tudo certo" e "não havia nada para olhar" — e elas são indistinguíveis.
+Numa varredura real, uma peça que não desenhou devolveu `[]` e passou como
+aprovada. Todo teste desse tipo tem que reportar **quantos elementos entraram na
+conta**, e um `examinados: 0` é falha, não sucesso. O mesmo vale para o `grep`
+que não acha nada e para o `filter()` que devolve vazio.
+
+**`window.test()` é sobrescrito pelo `change` do replicant.** Ensaiar pelo
+console funciona, mas o valor que você acabou de pintar vive até o replicant
+sincronizar — e aí a peça redesenha com o estado real (vazio, se ninguém
+preencheu) e some com o seu ensaio. O sintoma é medir e achar todos os campos em
+branco, sem erro nenhum. Duas saídas: **medir na mesma sequência**, sem ceder o
+event loop entre o `test()` e a leitura, ou **escrever no replicant** em vez do
+`test()` — que é o caminho de produção e não tem essa janela. Se escrever no
+replicant e a peça não reagir, confira que o nome é o mesmo que ela escuta: um
+`nodecg.Replicant("NOME_ERRADO")` cria um replicant novo, aceita a escrita e não
+avisa nada.
 
 **Duas instâncias do NodeCG mentem.** Subir a segunda sem parar a primeira dá
 `EADDRINUSE`, e o que você continua medindo é o servidor VELHO. Confirme que só há
