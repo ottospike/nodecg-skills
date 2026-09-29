@@ -7,6 +7,34 @@ trivial: as três primeiras só aparecem no ar, e a quinta parece bug de easing.
 Para matte orgânico (tinta, pincel, dissolve) o caminho não é este:
 `spritesheet-mask-reveal.md`.
 
+Se a animação está correta e mesmo assim **engasga dentro do vMix**, o problema
+não é a timeline: `render-no-vmix.md`.
+
+## GSAP e não `transition` CSS, mesmo num slide de dois estados
+
+Uma `transition` resolve um liga/desliga e é tentador deixar onde já existe. Num
+lower third ela cobra três coisas, e duas só aparecem no ar:
+
+- **A saída fica com a curva da entrada.** `transition` é simétrica por
+  natureza: a peça entra com ease-out e **sai** com ease-out também — freando
+  enquanto vai embora, que é o contrário do que o olho espera. Numa auditoria de
+  kit, as duas únicas peças com transição CSS eram exatamente as duas cujo gesto
+  de saída divergia de todas as outras, e ninguém tinha percebido porque a
+  divergência morava numa linha de CSS, não na timeline.
+- **A saída fica mais longa.** Simétrica também na duração: 0,55s para limpar o
+  quadro onde as irmãs levam 0,4s.
+- **O fim da saída vira adivinhação.** Pausar o vídeo, trocar o texto fora de
+  vista, esconder o container — tudo isso precisa do instante em que a saída
+  acabou, e com CSS esse instante vive num `setTimeout(MS_SAIDA)` que tem que
+  concordar à mão com a duração declarada no CSS. Mexer num e esquecer o outro
+  quebra a peça em silêncio. Com timeline é o `onComplete` — mesmo relógio.
+
+O que fica no CSS é o **estado de repouso** (`opacity: 0` e o transform de fora
+do quadro), que é a trava anti-flash do boot. Quem anima é a timeline.
+
+⚠️ Ao converter, o `FORA` do script tem que bater com o transform de repouso do
+CSS — e diga isso nos dois lugares, senão o próximo a mexer muda um só.
+
 ## Carregando
 
 Vendorize local. Máquina de transmissão pode estar sem internet, e CDN fora do ar

@@ -211,3 +211,15 @@ Duas pegadinhas que custam meia hora cada:
 Prove o caminho INTEIRO, não a metade que você suspeita: com o painel e o gráfico
 ambos verificados, o bug que sobra está no terceiro lugar — e foi assim que um
 "Setar não retira o time" virou um `tocado` que o botão Limpar não marcava.
+
+Duas coisas que o mesmo CDP responde e que não são caminho de dado:
+
+- **`LayerTree.enable` + `LayerTree.layerTreeDidChange`** dão o inventário de
+  camadas compositadas com as dimensões de cada uma. É como se prova custo de
+  render — e com `--disable-gpu`, que é o caminho do CEF do vMix. Ver
+  `render-no-vmix.md`.
+- **Amostrar `getComputedStyle` a cada `requestAnimationFrame`** e contar os
+  valores DISTINTOS prova que a peça ANIMOU (passa por ~20 estados) em vez de ter
+  saltado (1 estado). É o teste das travas de primeiro estado e de on-air — e ele
+  tem que chamar o `aplicar()` de verdade, não o `window.test()`, que pula a
+  trava de propósito.
