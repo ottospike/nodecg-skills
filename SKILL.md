@@ -1,6 +1,6 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. Use também quando o trabalho começar no Google Drive ("quais gráficos esse projeto pede", "lista as demandas do Drive", "baixa os PSDs do projeto", "monta a estrutura de pastas dos gráficos"), ou quando a dúvida for de vocabulário ("isso é um lower third ou um in-game?", "o que é área de interesse", "como decido o corte das plates"). É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
+description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, playout em CasparCG (AMCP, mapa de camadas, cena com MIX/STING, clipes e vinhetas, fontes SDI/NDI, gráfico do bundle numa camada HTML, template CG play/stop/update, estado real por OSC), performance de render dentro do browser source (animação que engasga no vMix, vídeo de canvas cheio, will-change), gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS/CasparCG — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), quando o playout for CasparCG ("liga isso no Caspar", "põe o gráfico numa camada", "toca a vinheta no Caspar", "o template não responde ao CG PLAY", "manda o AMCP"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. Use também quando o trabalho começar no Google Drive ("quais gráficos esse projeto pede", "lista as demandas do Drive", "baixa os PSDs do projeto", "monta a estrutura de pastas dos gráficos"), ou quando a dúvida for de vocabulário ("isso é um lower third ou um in-game?", "o que é área de interesse", "como decido o corte das plates"). É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
 ---
 
 # Bundles NodeCG para broadcast
@@ -32,12 +32,15 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 |---|---|
 | Começando um gráfico novo | `assets/grafico-modelo.html` |
 | Começando um painel novo | `assets/painel-modelo.html` |
+| **"Como essa ÁREA é construída?"** — a anatomia de runtime de um lower third, um fullscreen, um draft, um in-game, uma peça de canto, uma moldura de câmera: máquina de estados, gramática de movimento, arte em vídeo, medição de texto, contrato do `assets.json` | **`references/familias-de-peca.md`** |
 | **"Mudei no painel e o gráfico não atualiza"** | §4 (Como escrever) e o checklist final |
 | Animando entrada/saída, troca de conteúdo, stagger | `references/animacao-gsap.md` |
+| **A peça anima aos trancos DENTRO do vMix** e lisa no navegador · vai pôr vídeo de canvas cheio num gráfico · pensou em `will-change` | `references/render-no-vmix.md` |
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | **Precisa PROVAR que funciona** (desenha? anima? cabe? gravou?) | `references/padroes-replicant.md` §10, verificação por CDP |
-| Falando com o vMix, ou migrando de CasparCG | `references/vmix.md` |
+| Falando com o vMix, ou portando bundle antigo do modelo CasparCG | `references/vmix.md` |
+| **O playout é CasparCG** — camadas, AMCP, cena de fullscreen com `MIX`/`STING`, clipe/vinheta, fonte SDI/NDI, gráfico do bundle numa camada `[HTML]`, template CG (`play/stop/update`), selo NO AR pelo OSC, testar direto no servidor, **saída pela janela `screen`** (a saída principal deste projeto), `casparcg.config` de referência, modo teste (canal 2), **HTML ligado a fundo em vídeo** (tabela sobre `bg.mp4`, entrada/saída por prazo), compatibilidade do Chromium do Caspar (GSAP ok, H.264 em `<video>` não) | `references/casparcg.md` (+ `assets/caspar-*.js`, `assets/utils-caspar.js`, `scripts/caspar.js`) |
 | **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
 | **O trabalho começa no Google Drive** — quais gráficos o projeto pede, baixar os PSDs, montar a estrutura de pastas | `references/drive-to-graphics.md` |
 | **"Isso é um lower third ou um in-game?"** — vocabulário dos tipos de peça, área de interesse, como se decide o corte das plates | `references/psd-to-html/tipos-de-peca.md` |
@@ -158,17 +161,32 @@ input no vMix**: com um só, não existe cena de A e cena de B para cortar entre
 elas. Se as duas entram e saem sozinhas, são dois arquivos e dois replicants,
 mesmo que 80% do CSS se repita.
 
-**Arquivos de gráfico** — snake_case, com prefixo por tipo de entrada:
+**Arquivos de gráfico** — snake_case, com prefixo por **tipo de entrada**. São
+três famílias, e a diferença entre elas é *quem põe a peça no ar*:
 
-- `lt_*` → lower third, entra/sai por animação própria (`lt_single.html`)
-- `fs_*` → fullscreen (`fs_pergunta.html`, `fs_contador.html`)
+- `lt_*` → **lower third**: entra e sai a cada informação, por animação própria,
+  e o ar é um campo `visivel` do replicant (`lt_single.html`)
+- `fs_*` → **fullscreen**: é uma cena do switcher. O vMix transiciona
+  (`PreviewInput` + `Stinger`), o HTML **não anima e não tem `visivel`**
+  (`fs_pergunta.html`, `fs_contador.html`)
+- sem prefixo → **peça de canto**: fica no ar por trechos longos e se preenche
+  (`bug.html`, `chat.html`, um overlay de partida)
 
 O critério é **quem anima**, não quanto do quadro a peça ocupa. Uma peça que
 cobre a metade de baixo do quadro e entra pela própria timeline é `lt_`, não
 `fs_` — num bundle real uma delas ficou anos com o prefixo errado, e o custo é
 que `fs_` PROMETE que quem transiciona é o vMix. Quem for ligar a peça procura
 uma cena no switcher que não existe.
-- sem prefixo → peça que fica no ar por longos trechos (`bug.html`, `chat.html`)
+
+🚨 **E um prefixo pode mentir por herança.** Um rename pedido pela produção deixa
+`lt_` num arquivo que é peça de canto. Quando prefixo e comportamento
+divergirem, o **cabeçalho do arquivo manda** — e ele tem que dizer isso na
+primeira tela, apontando onde está a gramática certa. Não renomeie sozinho: o
+nome é a URL da browser source no vMix.
+
+A anatomia completa de cada família — máquina de estados, curvas de animação,
+como a arte em vídeo muda o arquivo, o que o painel de cada área faz — está em
+`references/familias-de-peca.md`.
 
 O nome descreve **a peça**, não a posição dela no roteiro. Numeração de bloco muda
 de ordem entre ensaio e programa; a peça continua sendo o que ela mostra.
@@ -525,6 +543,33 @@ Promise.all([MEDIDA.pronta(FACES), precarregar(PLATES)]).then(iniciar);
 Depois disso o navegador já tem tudo em cache, então o `background-image` do CSS
 pinta no primeiro quadro — que é o ponto: **a peça nunca aparece incompleta.**
 
+### Quando a arte é VÍDEO em loop
+
+O motion às vezes entrega a arte da peça como webm com alfa, em vez de PNG. A
+convenção é a mesma das plates — **canvas cheio 1920×1080**, com a peça já no
+lugar que o designer desenhou —, e ela é certa: o elemento vai em 0,0 e ninguém
+remede coordenada.
+
+Três coisas mudam, e as três já custaram ar:
+
+- **A entrada espera o vídeo estar RODANDO.** Sem isso a peça desliza para
+  dentro do quadro com o frame 0 congelado e o loop só começa depois que ela
+  parou — no ar lê como engasgo. Espere `canplaythrough` no boot (não
+  `loadeddata`, que promete só o primeiro frame) e o `play()` antes de animar.
+- **Fora do ar, pause.** Sete peças decodificando VP9 com alfa a 1920×1080 ao
+  mesmo tempo gastam CPU da máquina de transmissão sem nada aparecer na tela.
+  Pause só no FIM da saída — pausar no começo congela a arte à vista.
+- 🚨 **Recorte o elemento com `clip-path` pela caixa MEDIDA da arte.** É o maior
+  ganho de performance disponível num bundle assim, e sem ele a peça repinta o
+  quadro inteiro 24×/s parada no ar. A caixa sai da união do alfa sobre **todos
+  os frames** do loop, nunca de uma amostragem — a arte flutua, e amostragem
+  esparsa cai fora do extremo. `references/render-no-vmix.md`.
+
+Um webm raramente cobre a peça INTEIRA: o normal é ele substituir **uma** das
+plates e o resto continuar PNG (peça híbrida). Como medir isso antes de portar,
+o que a troca faz PERDER (animação por camada, campo vivo que virou queimado), e
+as quatro armadilhas do `<video>` estão em `references/familias-de-peca.md` §8.
+
 Texto dentro de plate de largura fixa **precisa de auto-fit**: reduza o corpo
 até caber, com piso — e quando estourar o piso, `nodecg.log.warn` e deixa passar.
 Cortar o nome de alguém no meio é pior que passar 2px da arte.
@@ -710,6 +755,26 @@ pushup) estão em `references/animacao-gsap.md`.
 Quando a transição for um matte orgânico de vídeo (tinta, pincel, dissolve), não
 tente `clip-path` nem gradiente — vá pra `references/spritesheet-mask-reveal.md`.
 
+### 🚨 Lisa no navegador e aos trancos no vMix é outro problema
+
+Se o relato for "a animação engasga depois que eu inputei no vMix" — em especial
+**na saída** —, pare de procurar defeito na timeline. O browser source do vMix é
+CEF em **off-screen rendering: não há compositing por GPU**. A página é
+rasterizada para um bitmap em memória de sistema, e o que custa é a **ÁREA
+repintada por quadro**, não a propriedade animada.
+
+As duas consequências que mordem quase sempre:
+
+- **Vídeo de canvas cheio quer `clip-path`.** Um `<video>` de 1920×1080 em loop
+  se declara sujo inteiro a cada frame — 2,07 Mpx, 24×/s, **com a peça parada no
+  ar**. Recortar pela caixa medida da arte corta isso entre 9× e 67×.
+- **`will-change` num elemento de 1920×1080 PIORA** (medido: +1 camada de quadro
+  cheio, e desfaz o ganho do recorte). A regra é "promova o que se move **se a
+  caixa dele for pequena**".
+
+Tudo com número, e como medir sem acreditar no teste errado, em
+`references/render-no-vmix.md`.
+
 ---
 
 ## 8. Gramática dos controles do dashboard
@@ -739,7 +804,9 @@ Regras que valem mais que o layout:
   ar?", não escreva `.status` embaixo.
 - **Selo só diz o que o painel sabe.** Se quem manda no ar é o vMix, "NO AR"
   mentiria. Duas saídas honestas: sem selo, ou um selo rotulado **PEDIDO** quando o
-  painel de fato disparou a cena. Não invente um terceiro estado.
+  painel de fato disparou a cena. Não invente um terceiro estado. (Com
+  **CasparCG** o painel PODE saber: o OSC diz o que cada camada está tocando, e
+  aí PEDIDO e NO AR viram dois selos honestos — `references/casparcg.md` §7.)
 - **Uma cena, um botão.** Se a mesma cena aparece numa grade E num painel próprio, o
   operador vai apertar a errada — e a errada costuma ser a que faz menos. Tire da
   grade o que ganhou painel, com a lista num arquivo compartilhado. Se uma cena
@@ -970,6 +1037,14 @@ máquina sem o software. Nomes que precisam bater letra por letra com outro sist
 Detalhes da ponte — helpers HTTP, `Restart`+`Play` para mídia, canais de overlay,
 migração CasparCG→vMix — em `references/vmix.md`.
 
+**Com CasparCG no lugar do vMix, a extension vira o switcher.** O Caspar não tem
+mesa: só faz o que um cliente manda por TCP (AMCP, porta 5250). O modelo de ar
+não muda — o painel grava replicant, a extension traduz —, mas a tradução passa
+a ser um mapa de camadas, a cena entra num lote atômico (fundo + HTML no mesmo
+quadro), e o estado real volta por OSC, o que finalmente permite um selo NO AR
+honesto em fullscreen. Tudo, com cliente AMCP e leitor OSC prontos, em
+`references/casparcg.md`.
+
 ### O bundle é hóspede na API dos outros
 
 Quando o dado vem de um serviço que **não é deste bundle** (um servidor de stats,
@@ -1194,6 +1269,11 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] trava de primeiro estado e trava de on-air
 - [ ] combina duas fontes? nenhuma delas derruba a outra por `return` cedo
 - [ ] GSAP vendorizado local; timeline de entrada reseta o estado inicial dos filhos
+- [ ] a peça anima em GSAP, e não numa `transition` CSS — transição é simétrica por
+      natureza, então ela faz a peça SAIR com ease-out (freando ao ir embora), e
+      obriga a adivinhar o fim da saída num `setTimeout` paralelo
+- [ ] se a arte é vídeo de canvas cheio: `clip-path` pela caixa medida, senão a
+      peça repinta 1920×1080 a 24fps parada no ar (`references/render-no-vmix.md`)
 - [ ] `fit.js` + `devmode.js` no fim do body
 - [ ] `window.test()` funcionando
 - [ ] tela de dev mostra o que foi DESENHADO, sem campo órfão de estado removido
@@ -1234,6 +1314,9 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] os comentários explicam os números e as decisões descartadas
 - [ ] só UMA instância do NodeCG está no ar (senão eu medi a antiga)
 - [ ] o que é visual eu **vi** — screenshot ou leitura de DOM por CDP, não só HTTP 200
+- [ ] mexi em performance de render? medi com `--disable-gpu` (o caminho do CEF do
+      vMix) e comparei o INVENTÁRIO DE CAMADAS antes/depois — com a GPU ligada eu
+      teria medido outra máquina
 
 **O painel sobe sem rede.** Montar as linhas e assinar os replicants **nunca**
 mora dentro de `BS.carregar().then(...)` — nada disso precisa de manifest. Só o

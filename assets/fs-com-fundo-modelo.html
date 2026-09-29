@@ -1,0 +1,190 @@
+<!doctype html>
+<!--
+  fs-com-fundo-modelo.html — fullscreen HTML LIGADO a um fundo em vídeo do Caspar
+  ==============================================================================
+  Copie como `graphics/fs_<peça>.html` (ex.: fs_tabela.html). Guia: skill nodecg,
+  references/casparcg.md §15 (composição).
+
+  O QUE É: a camada de CIMA de uma cena de fullscreen. O fundo (bg_tabela.mp4 /
+  .mov) é uma camada de vídeo do Caspar, EMBAIXO desta; a extension toca o
+  fundo e publica, em DB_FS_AR, os PRAZOS (epoch ms) em que esta peça tem de
+  entrar e sair. A peça só agenda a própria timeline por esses prazos — é assim
+  que a tabela entra no quadro 40 do fundo e sai antes do fundo ir embora.
+
+  O QUE NÃO É: dona do ar. Quem decide a cena é o painel (DB_FS); quem toca o
+  vídeo e calcula os prazos é a extension. A peça nunca fala com o Caspar.
+
+  Por que PRAZO e não "anime agora":
+    · a mensagem de replicant chega alguns ms depois do vídeo começar; um prazo
+      absoluto absorve esse atraso — a peça anima no horário certo, não "quando
+      a mensagem chegou";
+    · se a página recarregar com a cena no ar (CALL RELOAD, queda da camada),
+      o prazo já passou: a peça pula a timeline para o ponto em que ELA ESTARIA
+      e aparece no lugar, sem re-animar. É a trava de primeiro estado, feita
+      com tempo em vez de flag.
+
+  Esta camada fica PERMANENTE no Caspar (carregada no boot), transparente até a
+  cena dela entrar. Carregar na hora do PLAY faria a entrada depender do tempo
+  de carga da página — e aí a tabela não cai no quadro 40, cai quando der.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="utils/fontes.css" />
+  <style>
+    html, body { margin: 0; background: transparent; overflow: hidden; }
+    .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+
+    /* Geometria do PSD, em coordenada de canvas (§6 do SKILL.md). */
+    #tabela { position: absolute; left: 360px; top: 190px; width: 1200px; opacity: 0; }
+    #titulo { height: 90px; font: 64px/90px sans-serif; color: #fff; text-transform: uppercase; }
+    .linha  { height: 64px; margin-top: 8px; background: rgba(10, 10, 40, .85); color: #fff;
+              font: 34px/64px sans-serif; padding: 0 24px; display: flex; justify-content: space-between; }
+
+    #dev { display: none; position: absolute; left: 20px; bottom: 20px; padding: 10px 14px;
+           background: rgba(0,0,0,.8); color: #0f0; font: 18px/1.35 monospace; white-space: pre; }
+    .stage.dev #dev { display: block; }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div id="tabela">
+      <div id="titulo">—</div>
+      <div id="linhas"></div>
+    </div>
+    <div id="dev"></div>
+  </div>
+
+  <script src="vendor/gsap.min.js"></script>
+  <script>
+    /* A cena desta peça, igual à CHAVE em cfg.caspar.cenas. */
+    const MINHA_CENA = "tabela";
+
+    const tabelaEl = document.getElementById("tabela");
+    const tituloEl = document.getElementById("titulo");
+    const linhasEl = document.getElementById("linhas");
+    const devEl = document.getElementById("dev");
+    const diag = { ar: "—", entrada: "—", saida: "—", linhas: 0 };
+
+    function pintarDiag() {
+      if (!document.getElementById("stage").classList.contains("dev")) return;
+      devEl.textContent = `cena: ${diag.ar}\nentrada: ${diag.entrada}\nsaída: ${diag.saida}\nlinhas: ${diag.linhas}`;
+    }
+
+    /* ---------- conteúdo (vem do replicant de DADO, não do de ar) ---------- */
+    function render(d) {
+      d = d || {};
+      tituloEl.textContent = String(d.titulo || "").toUpperCase();
+      const linhas = Array.isArray(d.linhas) ? d.linhas : [];
+      // Layout fixo por quantidade: recria só se a CONTAGEM mudou; senão troca
+      // texto (recriar nó a cada update pisca no ar — §7 do SKILL.md).
+      if (linhasEl.children.length !== linhas.length) {
+        linhasEl.innerHTML = "";
+        linhas.forEach(() => {
+          const l = document.createElement("div");
+          l.className = "linha";
+          l.innerHTML = "<span></span><span></span>";
+          linhasEl.appendChild(l);
+        });
+      }
+      linhas.forEach((ln, i) => {
+        const s = linhasEl.children[i].children;
+        s[0].textContent = String(ln.nome || "").toUpperCase();
+        s[1].textContent = String(ln.valor == null ? "" : ln.valor);
+      });
+      diag.linhas = linhas.length;
+      pintarDiag();
+    }
+
+    /* ---------- as duas timelines ----------
+       Construídas NA HORA de rodar (as linhas podem ter mudado), com o estado
+       inicial resetado no topo — replay-safety do §7. */
+    function tlEntrada() {
+      const linhas = Array.from(linhasEl.children);
+      const tl = gsap.timeline({ paused: true });
+      tl.set(tabelaEl, { opacity: 1 });
+      tl.set(tituloEl, { clipPath: "inset(0 100% 0 0)" });
+      tl.set(linhas, { opacity: 0, x: -60 });
+      tl.to(tituloEl, { clipPath: "inset(0 0% 0 0)", duration: 0.45, ease: "power3.out" });
+      tl.to(linhas, { opacity: 1, x: 0, duration: 0.35, stagger: 0.05, ease: "power2.out" }, 0.15);
+      return tl;
+    }
+    function tlSaida() {
+      const linhas = Array.from(linhasEl.children).reverse();
+      const tl = gsap.timeline({ paused: true });
+      tl.to(linhas, { opacity: 0, x: 60, duration: 0.25, stagger: 0.03, ease: "power2.in" });
+      tl.to(tituloEl, { clipPath: "inset(0 0 0 100%)", duration: 0.3, ease: "power2.in" }, "-=0.1");
+      tl.set(tabelaEl, { opacity: 0 });
+      return tl;
+    }
+
+    /* ---------- agendar por PRAZO ----------
+       atraso > 0 → espera e roda do começo.
+       atraso ≤ 0 → o prazo já passou (mensagem atrasada, ou a página
+       recarregou no ar): roda a timeline A PARTIR do ponto em que ela estaria.
+       Se já devia ter terminado, cai direto no estado final, sem animar. */
+    let tlAtual = null;
+    let timer = null;
+
+    function rodarEm(epoch, fabrica, rotulo) {
+      const atraso = epoch - Date.now();
+      const iniciar = (pular) => {
+        tlAtual && tlAtual.kill();
+        tlAtual = fabrica();
+        tlAtual.play(Math.min(pular, tlAtual.duration()));
+        diag[rotulo] = pular > 0 ? `atrasada ${Math.round(pular * 1000)}ms → pulou` : "no prazo";
+        pintarDiag();
+      };
+      if (atraso > 0) timer = setTimeout(() => iniciar(0), atraso);
+      else iniciar(-atraso / 1000);
+    }
+
+    function esconder() {
+      tlAtual && tlAtual.kill();
+      tlAtual = null;
+      gsap.set(tabelaEl, { opacity: 0 });
+    }
+
+    /* Estado de ar vindo da extension:
+         { cena, htmlEntraEm, htmlSaiEm }   (epoch ms; htmlSaiEm = null enquanto no ar)
+       Toda mudança CANCELA o que estava agendado e recalcula do zero — o estado
+       é a verdade, não a sequência de mensagens. */
+    function aplicarAr(s) {
+      clearTimeout(timer);
+      const minha = !!s && s.cena === MINHA_CENA;
+      diag.ar = s && s.cena ? s.cena + (minha ? "" : " (outra)") : "nenhuma";
+
+      if (!minha || !s.htmlEntraEm) { esconder(); pintarDiag(); return; }
+
+      if (s.htmlSaiEm) {
+        // Saindo. Se a entrada nem começou a ser vista, não há o que tirar.
+        if (s.htmlSaiEm - s.htmlEntraEm <= 0) { esconder(); return; }
+        rodarEm(s.htmlSaiEm, tlSaida, "saida");
+      } else {
+        rodarEm(s.htmlEntraEm, tlEntrada, "entrada");
+      }
+      pintarDiag();
+    }
+
+    /* Leitores SEM defaultValue (§2). DB_FS_AR é da extension. */
+    const DB_TABELA = nodecg.Replicant("DB_TABELA");
+    const DB_FS_AR = nodecg.Replicant("DB_FS_AR");
+    DB_TABELA.on("change", render);
+    DB_FS_AR.on("change", aplicarAr);
+
+    const DB_DEVMODE = nodecg.Replicant("DB_DEVMODE");
+    DB_DEVMODE.on("change", (v) => { document.getElementById("stage").classList.toggle("dev", v === true); pintarDiag(); });
+
+    /* Ensaio sem painel e sem Caspar: testAr(0) entra agora; testAr(-3000)
+       simula a página abrindo 3s depois da entrada (tem de aparecer parada). */
+    window.test = (d) => render(d || { titulo: "Classificação", linhas: [{ nome: "Time A", valor: 9 }, { nome: "Time B", valor: 6 }] });
+    window.testAr = (deslocMs, saiMs) => aplicarAr({
+      cena: MINHA_CENA,
+      htmlEntraEm: Date.now() + (deslocMs || 0),
+      htmlSaiEm: saiMs == null ? null : Date.now() + saiMs,
+    });
+  </script>
+  <script src="utils/fit.js"></script>
+  <script src="utils/devmode.js"></script>
+</body>
+</html>

@@ -15,6 +15,7 @@ O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 | `references/dashboard-ui.md` | classes do design system dos painéis |
 | `references/padroes-replicant.md` | 8 padrões de estado com código |
 | `references/vmix.md` | ponte HTTP com o vMix, migração CasparCG |
+| `references/casparcg.md` | playout em CasparCG: camadas, AMCP, mídia/fontes, template CG, OSC, teste no servidor (+ `assets/caspar-*.js`, `scripts/caspar.js`) |
 | `references/drive-to-graphics.md` | subskill: as demandas do projeto no Google Drive → pastas do bundle |
 | `references/psd-to-html/tipos-de-peca.md` | o que é lower third, fullscreen, in-game e bug; área de interesse; layerização |
 | `references/psd-to-html/` | subskill: PSD → plates + manifesto → HTML |

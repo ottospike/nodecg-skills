@@ -3,6 +3,13 @@
 Leia quando a extension precisar falar com o switcher, ou quando estiver portando
 um gráfico do modelo CasparCG.
 
+Se o playout do programa é um CasparCG (e não um bundle antigo que você está
+trazendo DE lá), o documento é outro: `casparcg.md`.
+
+Isto é sobre a ponte HTTP. O que acontece DENTRO da browser source — por que uma
+animação lisa no navegador engasga no vMix, e o que custa área de repaint — é
+outro assunto: `render-no-vmix.md`.
+
 ## O modelo de ar
 
 Duas famílias de peça, e elas se comportam de forma oposta:
