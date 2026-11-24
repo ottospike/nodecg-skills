@@ -13,57 +13,63 @@ description: >-
   do NodeCG em Docker/Coolify, incluindo a persistência de Replicants.
 ---
 
-# Bundles NodeCG para broadcast
+# Grafismo de broadcast com NodeCG e browser sources
 
-Este documento é um **builder de esqueleto**: ele diz como estruturar o grafismo de
-um bundle NodeCG — onde o estado mora, como o arquivo se organiza, como a peça
-entra e sai do ar, como o operador controla. Não é sobre um programa específico.
-Cor, fonte, tipo de peça e nomenclatura de conteúdo vêm do projeto; o esqueleto é o
-mesmo em todos.
+## Fluxo de trabalho
 
-Onde aparecem números concretos (uma largura útil, um limite de caracteres), eles
-são **exemplo de como a restrição se manifesta**, não valor a copiar. O que copia é
-o raciocínio: mediu, achou o limite, tratou.
+1. **Identifique a saída e o estado.** Confirme o motor de playout, a resolução
+   do canvas, as camadas que convivem no ar e quem controla PLAY/OUT. Em NodeCG,
+   use Replicants (§1–4). Em browser sources independentes, mantenha o transporte
+   do projeto e restaure a aparência a partir do snapshot. Trate o primeiro
+   estado e a reconexão como renderização da situação atual.
+2. **Prepare a arte e o movimento.** Use o guia de marca para escolher fontes,
+   camadas e movimento. Registre origem, dimensões e transparência da mídia
+   por peça. Sirva fontes, arte de produção e GSAP localmente. Use HTML e GSAP
+   para geometria que acompanha o texto e a referência abaixo que corresponde
+   à arte recebida para PSD, matte ou vídeo com alfa. Ensaie os movimentos
+   sobre fundo quadriculado antes de integrá-los ao playout.
+3. **Componha no canvas inteiro.** Em 9:16, meça a interface da plataforma sobre
+   uma captura real e preserve o rosto e a área de ação da câmera. Separe a
+   âncora que recebe posição e escala da camada que anima. Se uma peça troca
+   detalhe por resumo, mantenha os dois estados na mesma fonte. Se houver um
+   destaque que oculta outras peças, derive o foco do estado e de um prazo.
+   Quando o destaque depender de imagem, aguarde a decodificação ou o
+   fallback antes de ocultar as outras camadas.
+4. **Ensaie com a operação real.** Confira PLAY → OUT → PLAY, recarga durante
+   o ar, mídia ausente e reconexão. A recarga deve restaurar a aparência sem
+   repetir a entrada. Para efeitos sonoros, atribua ID e validade à cue,
+   defina o comportamento na recarga e confira no mixer qual fonte toca.
+   Registre o que foi observado no motor de destino e quais cenários ficaram
+   sem ensaio.
 
-O contexto que explica quase toda decisão aqui: **isso roda ao vivo**. Uma browser
-source recarrega no meio do programa, o operador está apertando botão com o
-programa no ar, e um bug não dá pra "corrigir e reimplantar". Toda regra abaixo
-existe porque algum desses três já mordeu num projeto real.
-
-Se o bundle em que você está divergir deste documento, o bundle manda — mas diga
-isso em voz alta em vez de seguir calado.
+As dimensões, tempos e curvas nos exemplos vêm dos projetos de origem. Use as
+medidas e convenções do bundle que estiver editando.
 
 ## Mapa desta skill
 
-O corpo abaixo são as convenções que valem pra todo trabalho no bundle. O resto
-está em documentos que você **carrega sob demanda** — não leia tudo de uma vez.
+Abra a referência correspondente ao trabalho.
 
 | Quando | Leia |
 |---|---|
-| Começando um gráfico novo | `assets/grafico-modelo.html` |
-| Começando um painel novo | `assets/painel-modelo.html` |
-| **"Como essa ÁREA é construída?"** — a anatomia de runtime de um lower third, um fullscreen, um draft, um in-game, uma peça de canto, uma moldura de câmera: máquina de estados, gramática de movimento, arte em vídeo, medição de texto, contrato do `assets.json` | **`references/familias-de-peca.md`** |
-| **"Mudei no painel e o gráfico não atualiza"** | §4 (Como escrever) e o checklist final |
-| Animando entrada/saída, troca de conteúdo, stagger | `references/animacao-gsap.md` |
-| Produzindo assets a partir do guia de marca, kit do designer ou arte nova | [Produção de assets](references/producao-assets.md) |
-| Compondo uma saída 9:16 no OBS, com camadas, área segura e modo foco | [Overlays verticais no OBS](references/obs-vertical.md) |
-| Preparando cortes, loops e efeitos sonoros acionados no painel | [Áudio ao vivo](references/audio-ao-vivo.md) |
-| **A peça anima aos trancos DENTRO do vMix** e lisa no navegador · vai pôr vídeo de canvas cheio num gráfico · pensou em `will-change` | `references/render-no-vmix.md` |
-| Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
-| Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
-| **Precisa PROVAR que funciona** (desenha? anima? cabe? gravou?) | `references/padroes-replicant.md` §10, verificação por CDP |
-| Falando com o vMix, ou portando bundle antigo do modelo CasparCG | `references/vmix.md` |
-| **O playout é CasparCG** — camadas, AMCP, cena de fullscreen com `MIX`/`STING`, clipe/vinheta, fonte SDI/NDI, gráfico do bundle numa camada `[HTML]`, template CG (`play/stop/update`), selo NO AR pelo OSC, testar direto no servidor, **saída pela janela `screen`** (a saída principal deste projeto), `casparcg.config` de referência, **modo teste = preview no canal 2 que não toca no ar** (gráficos nos dois canais, página congelada por `canal.js`, ensaio descartado na volta), **reconciliação sem piscar** (lê o OSC antes de recarregar), **HTML ligado a fundo em vídeo** (tabela sobre `bg.mp4`, entrada/saída por prazo), compatibilidade do Chromium do Caspar (GSAP ok, H.264 em `<video>` não) | `references/casparcg.md` (+ `assets/caspar-*.js`, `assets/utils-caspar.js`, `assets/canal.js`, `scripts/caspar.js`) |
-| **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
-| **O trabalho começa no Google Drive** — quais gráficos o projeto pede, baixar os PSDs, montar a estrutura de pastas | `references/drive-to-graphics.md` |
-| **"Isso é um lower third ou um in-game?"** — vocabulário dos tipos de peça, área de interesse, como se decide o corte das plates | `references/psd-to-html/tipos-de-peca.md` |
-| **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
-| **A arte veio só como PNG achatado** ou como frame de transmissão, sem camadas — inclusive vários frames da mesma peça | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
-| **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
-| **A Motion mandou a peça como UM webm com entrada, hold e saída** e o texto tem que acompanhar a arte | `references/motion-in-hold-out.md` (+ `assets/motion/`, `scripts/motion-aplicar.mjs`) |
-
-Siga o fluxo completo da referência quando a tarefa envolver Drive, PSD,
-matte de vídeo ou WebM com IN/HOLD/OUT.
+| Gráfico ou painel novo | [Modelo de gráfico](assets/grafico-modelo.html) e [modelo de painel](assets/painel-modelo.html) |
+| Tipos de peça, máquina de estados, texto e contrato de assets | [Famílias de peça](references/familias-de-peca.md) |
+| Kit de marca, arte nova, formatos e galeria de motion | [Produção de assets](references/producao-assets.md) |
+| PSD/PSB com camadas, plates e reconstrução HTML | [PSD para HTML](references/psd-to-html/README.md) |
+| Print ou PNG achatado | [Análise de PNG](references/psd-to-html/png-analysis.md) |
+| Vocabulário de peças e recorte de plates | [Tipos de peça](references/psd-to-html/tipos-de-peca.md) |
+| Entrada, saída e troca de conteúdo no HTML | [Animação com GSAP](references/animacao-gsap.md) |
+| Matte orgânico de tinta, pincel ou dissolve | [Spritesheet de máscara](references/spritesheet-mask-reveal.md) |
+| WebM com entrada, hold e saída, com texto sincronizado | [Motion IN/HOLD/OUT](references/motion-in-hold-out.md) |
+| OBS vertical, áreas seguras, composição e foco | [Overlays verticais](references/obs-vertical.md) |
+| Cortes, loops, cues e mix no OBS | [Áudio ao vivo](references/audio-ao-vivo.md) |
+| Layout e componentes de painel | [Dashboard](references/dashboard-ui.md) |
+| Modelagem de Replicants e verificação por CDP | [Padrões de Replicants](references/padroes-replicant.md) |
+| O painel atualiza e o gráfico não acompanha | §4, Como escrever |
+| Animação engasga no vMix ou usa vídeo de canvas cheio | [Render no vMix](references/render-no-vmix.md) |
+| Controle de vMix ou migração de um bundle antigo do Caspar | [Ponte vMix](references/vmix.md) |
+| CasparCG, AMCP, OSC, preview, reconciliação, camadas e templates CG | [Playout no CasparCG](references/casparcg.md) |
+| Docker, Coolify, domínio e volumes | [Deploy](references/deploy.md) |
+| Demandas ou arquivos do projeto no Google Drive | [Drive para gráficos](references/drive-to-graphics.md) |
 
 ---
 
@@ -393,7 +399,7 @@ faça uma fábrica e chame duas vezes — não duplique.
 
 ## 6. Anatomia do gráfico
 
-Template completo em `assets/grafico-modelo.html`. As seis invariantes:
+Use o [modelo de gráfico](assets/grafico-modelo.html) e confira as invariantes do canvas e do fluxo de estado.
 
 1. `body { background: transparent }` e `.stage` no **frame inteiro de transmissão**
    — `1920×1080` (ou `1080×1920` no vertical), `overflow: hidden` — com cada plate
@@ -1276,7 +1282,7 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 **Gráfico novo**
 - [ ] nome com prefixo certo (`lt_` / `fs_` / cru) e registrado em `nodecg.graphics`
 - [ ] `background: transparent`, sem elemento de debug visível
-- [ ] `.stage` no frame inteiro (1920×1080), plates por coordenada de canvas — inclusive se for LT
+- [ ] `.stage` na resolução de referência da saída (por exemplo, 1920×1080 ou 1080×1920), com plates nas coordenadas do canvas
 - [ ] `shared/fontes.css` linkado; pesos reais, sem síntese
 - [ ] replicant lido sem `defaultValue`, tolerando `undefined`
 - [ ] trava de primeiro estado e trava de on-air
@@ -1303,7 +1309,7 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
       "pendente" sumiu e o SETAR está desabilitado (as três armadilhas do §8)
 - [ ] **o painel sobe sem rede**: montar linhas e assinar replicant fora de qualquer promise
 - [ ] toda promise de asset tem `.catch` com `nodecg.log.error`
-- [ ] replicants declarados aqui com `defaultValue` (não na extension)
+- [ ] Replicants têm `defaultValue` no painel dono ou na extension, conforme a regra de inicialização da §2
 - [ ] **uma escrita de replicant por handler** — função auxiliar que escreve conta como escrita
 - [ ] nada de escrita aninhada (`rep.value.a.b = x`); reatribui o objeto
 - [ ] dado preparado persiste, ar não persiste (dois replicants se a peça tem os dois)
@@ -1311,6 +1317,13 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] `.status` só onde acrescenta
 - [ ] nenhuma cena tem dois botões
 - [ ] imagem resolvida por nome, e a ausência declarada (nunca derivada do slug)
+
+**Saída vertical no OBS**
+
+- [ ] A composição foi conferida na largura de um celular, com a interface da plataforma e a câmera.
+- [ ] A posição e a escala no preview se aplicam sem reiniciar a animação.
+- [ ] Ao terminar o destaque, voltam apenas as peças que continuam em PLAY, inclusive após fallback de imagem.
+- [ ] Um disparo de áudio toca no destino esperado e STOP encerra o loop com fade, se a saída usa cues.
 
 **Antes de dizer que está pronto**
 - [ ] **o repo está limpo**: screenshot, dump, venv e script de conferência foram
