@@ -1,10 +1,11 @@
 ---
 name: nodecg
 description: >-
-  Crie e opere grafismo de broadcast em bundles NodeCG ou browser sources de
-  transmissão. Use para overlays, lower thirds, fullscreens, dashboards,
-  Replicants, manifesto de bundle, PLAY/OUT, timelines GSAP e áreas seguras.
-  Cobre produção de assets a partir de kit de marca, análise de PNG achatado,
+  Crie, estilize e anime gráficos de transmissão em HTML, CSS e GSAP para
+  NodeCG e browser sources. Use para overlays, lower thirds, fullscreens,
+  layout, tipografia, entradas, saídas, trocas de conteúdo, PLAY/OUT e
+  áreas seguras. Cobre também dashboards, Replicants e manifesto de bundle.
+  Inclui produção de assets a partir de kit de marca, análise de PNG achatado,
   conversão de PSD/PSB em plates e HTML via Photopea, Photoshop ou psd-tools,
   matte de vídeo para spritesheet, WebM com alfa em IN/HOLD/OUT e organização
   de demandas do Google Drive.
@@ -17,33 +18,30 @@ description: >-
 
 ## Fluxo de trabalho
 
-1. **Identifique a saída e o estado.** Confirme o motor de playout, a resolução
-   do canvas, as camadas que convivem no ar e quem controla PLAY/OUT. Em NodeCG,
-   use Replicants (§1–4). Em browser sources independentes, mantenha o transporte
-   do projeto e restaure a aparência a partir do snapshot. Trate o primeiro
-   estado e a reconexão como renderização da situação atual.
-2. **Prepare a arte e o movimento.** Use o guia de marca para escolher fontes,
-   camadas e movimento. Registre origem, dimensões e transparência da mídia
-   por peça. Sirva fontes, arte de produção e GSAP localmente. Use HTML e GSAP
-   para geometria que acompanha o texto e a referência abaixo que corresponde
-   à arte recebida para PSD, matte ou vídeo com alfa. Ensaie os movimentos
-   sobre fundo quadriculado antes de integrá-los ao playout.
-3. **Componha no canvas inteiro.** Em 9:16, meça a interface da plataforma sobre
-   uma captura real e preserve o rosto e a área de ação da câmera. Separe a
-   âncora que recebe posição e escala da camada que anima. Se uma peça troca
-   detalhe por resumo, mantenha os dois estados na mesma fonte. Se houver um
-   destaque que oculta outras peças, derive o foco do estado e de um prazo.
-   Quando o destaque depender de imagem, aguarde a decodificação ou o
-   fallback antes de ocultar as outras camadas.
-4. **Ensaie com a operação real.** Confira PLAY → OUT → PLAY, recarga durante
-   o ar, mídia ausente e reconexão. A recarga deve restaurar a aparência sem
-   repetir a entrada. Para efeitos sonoros, atribua ID e validade à cue,
-   defina o comportamento na recarga e confira no mixer qual fonte toca.
-   Registre o que foi observado no motor de destino e quais cenários ficaram
-   sem ensaio.
+1. **Componha o quadro.** Use uma área de trabalho transparente na resolução
+   da saída. Posicione as peças de acordo com as áreas seguras e o enquadramento
+   da câmera. Defina ordem de camadas e confira quais peças precisam conviver
+   no mesmo quadro.
+2. **Estruture e estilize a peça.** Use HTML para texto e dados. Separe a
+   âncora de posição, a camada que se move e o conteúdo. Centralize cor,
+   espaçamento, raio, sombra e tipografia em propriedades CSS quando houver
+   mais de uma peça com a mesma linguagem visual. Defina até onde textos
+   longos podem encolher, quebrar ou truncar. Confira esses limites com fontes
+   carregadas e dados de comprimentos diferentes.
+3. **Prepare a arte.** Use SVG para vetores e WebP ou PNG com alfa para imagens
+   recortadas. Mantenha fundo, máscara e arte em camadas quando cada elemento
+   precisar de movimento próprio. Sirva as dependências junto da peça e
+   aguarde a decodificação ou o fallback antes de revelar uma imagem dinâmica.
+4. **Desenhe os estados visuais.** Defina como a peça aparece fora do ar,
+   durante a entrada, em repouso, na troca de conteúdo e na saída. Escolha
+   um gesto que combine com a forma da peça e direcione o olhar. Use a
+   tabela da [seção de animação](#7-animação-com-gsap) para definir transições
+   que funcionam também quando são interrompidas.
+5. **Ensaie no quadro final.** Confira contraste sobre fundos claros e
+   escuros, leitura no tamanho de exibição e transparência fora do ar.
+   Teste PLAY → OUT → PLAY, troca rápida de conteúdo e recarga no ar.
+   Na recarga, restaure a aparência correspondente ao estado atual.
 
-As dimensões, tempos e curvas nos exemplos vêm dos projetos de origem. Use as
-medidas e convenções do bundle que estiver editando.
 
 ## Mapa desta skill
 
@@ -725,6 +723,24 @@ Implementação de referência: `graphics/utils/medida.js` no bundle da LEAGUETV
 
 ## 7. Animação com GSAP
 
+Escolha o movimento a partir da geometria. Um slide preserva a forma da peça.
+Uma máscara revela a arte sem deformar o texto. Uma gaveta mantém a borda
+ancorada enquanto o corpo se move sob recorte. Defina a origem dos movimentos
+na borda ou no elemento de onde a peça parece sair.
+
+| Fase | Comportamento |
+|---|---|
+| Entrada | Prepare texto e arte na posição final de layout. Posicione os elementos animados no estado inicial, revele a camada principal e dê sequência aos detalhes. |
+| Repouso | Mantenha o texto e os dados legíveis. Efeitos contínuos ficam em camadas decorativas e respeitam a configuração de movimento reduzido. |
+| Troca | Preserve a caixa e a âncora. Faça a substituição quando a máscara estiver fechada ou quando a nova imagem estiver decodificada. |
+| Saída | Comece a partir do quadro visível, inclusive durante a entrada. Termine com a peça transparente e pare os loops decorativos. |
+| Reentrada | Cancele a timeline anterior e seus callbacks. Restaure o estado inicial antes de tocar uma nova entrada completa. |
+
+Use `transform` e `opacity` para deslocamentos e fades. Use a geometria
+de layout para posicionar e dimensionar a peça, e aplique máscaras à menor
+camada que precisa do recorte. Confira recortes e efeitos no motor de
+exibição quando ocuparem uma parte grande do quadro.
+
 **GSAP é a ferramenta de animação padrão.** Transição CSS resolve um slide de dois
 estados e está ok onde já existe; qualquer coisa com timeline, `stagger`,
 `clip-path` animado ou troca de conteúdo no meio do movimento vai de GSAP — fazer
@@ -1318,12 +1334,13 @@ node -e "const b=require('fs').readFileSync('x.png');console.log(b.readUInt32BE(
 - [ ] nenhuma cena tem dois botões
 - [ ] imagem resolvida por nome, e a ausência declarada (nunca derivada do slug)
 
-**Saída vertical no OBS**
+**Estilo e animação**
 
-- [ ] A composição foi conferida na largura de um celular, com a interface da plataforma e a câmera.
-- [ ] A posição e a escala no preview se aplicam sem reiniciar a animação.
-- [ ] Ao terminar o destaque, voltam apenas as peças que continuam em PLAY, inclusive após fallback de imagem.
-- [ ] Um disparo de áudio toca no destino esperado e STOP encerra o loop com fade, se a saída usa cues.
+- [ ] A peça foi conferida com o quadro, o fundo e a escala de exibição reais.
+- [ ] Textos curtos e longos passam pelos limites de quebra, redução e truncamento previstos.
+- [ ] Uma troca durante a animação mantém a âncora e a última informação válida até a substituição.
+- [ ] OUT durante a entrada e PLAY durante a saída deixam a peça no estado visual pedido.
+- [ ] Fora do ar, a peça fica transparente e seus loops decorativos param.
 
 **Antes de dizer que está pronto**
 - [ ] **o repo está limpo**: screenshot, dump, venv e script de conferência foram
