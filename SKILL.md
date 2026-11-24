@@ -10,7 +10,9 @@ description: >-
   matte de vídeo para spritesheet, WebM com alfa em IN/HOLD/OUT e organização
   de demandas do Google Drive.
   Use também para saídas verticais no OBS, cues e loops de áudio, render no
-  vMix, playout CasparCG (AMCP, OSC, camadas, templates, SDI/NDI) e deploy
+  vMix, playout CasparCG (AMCP, OSC, camadas, templates, SDI/NDI, ensaio
+  no canal de teste sem tocar no ar, verificação com o MCP casparcg: "testa
+  no Caspar", "o teste resetou o ar", "o LT vazou pro programa") e deploy
   do NodeCG em Docker/Coolify, incluindo a persistência de Replicants.
 ---
 
@@ -68,6 +70,7 @@ Abra a referência correspondente ao trabalho.
 | Animação engasga no vMix ou usa vídeo de canvas cheio | [Render no vMix](references/render-no-vmix.md) |
 | Controle de vMix ou migração de um bundle antigo do Caspar | [Ponte vMix](references/vmix.md) |
 | CasparCG, AMCP, OSC, preview, reconciliação, camadas e templates CG | [Playout no CasparCG](references/casparcg.md) |
+| Ensaiar/conferir gráfico no Caspar sem tocar no ar: canal de teste, congelamento por `canal.js`, retrato e descarte, roteiro com o MCP `casparcg` (`caspar_status` → `caspar_print` → `caspar_page_sample`) | [Modo teste do Caspar](references/casparcg.md) §10 e §11 |
 | Docker, Coolify, domínio e volumes | [Deploy](references/deploy.md) |
 | Demandas ou arquivos do projeto no Google Drive | [Drive para gráficos](references/drive-to-graphics.md) |
 

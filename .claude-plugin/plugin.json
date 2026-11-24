@@ -2,7 +2,7 @@
 	"$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
 	"name": "nodecg",
 	"description": "Grafismo ao vivo com NodeCG, Replicants, GSAP, PSD→HTML, produção de assets, OBS vertical, áudio, vMix, CasparCG e deploy.",
-	"version": "1.8.0",
+	"version": "1.9.0",
 	"author": {
 		"name": "Otavio Cavalcanti",
 		"url": "https://github.com/ottospike"

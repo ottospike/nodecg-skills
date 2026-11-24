@@ -1237,6 +1237,18 @@ janela + NDI), com as correções que a análise dele pediu:
     encerrar a árvore de processos (`taskkill /PID <pid> /T /F`). Nunca no
     meio do programa.
 
+21. **Lote com um comando só executa, mas nunca responde.** `BEGIN` + 1 comando
+    + `COMMIT` fica sem resposta e o cliente espera para sempre. Mande o caso de
+    um comando sem `BEGIN/COMMIT`.
+22. **Saída recém-adicionada leva ~1 s para aparecer no `INFO`.** Conferir logo
+    depois do `ADD` diz "sem saída" e engana.
+23. **`PRINT` de canal vazio é transparente,** não preto nem branco. Confira a
+    cobertura de alfa (o `caspar_print` do MCP informa) antes de concluir que a
+    peça "não desenhou".
+24. **Duas páginas iguais em canais diferentes** (modo teste, §10): em DevTools
+    (`caspar_page_eval`, `caspar_page_sample`), filtre pela URL **com o canal**
+    (`lt_x.html?caspar=2`). Só o nome do arquivo pega qualquer uma das duas.
+
 ### O que os logs do projeto anterior mostraram
 
 A instalação de referência guarda os logs de três dias de programa (2024 e
