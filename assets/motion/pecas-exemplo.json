@@ -1,7 +1,7 @@
 {
 	"_leia": "'saida': 'reversa' = a saída é a ENTRADA de trás para frente, montada pelo script num webm só (pedido de 2026-11-10). Configuração do aplicar.mjs: lê a entrega da Motion, mede, reencoda com keyframes e grava a trilha de cada peça. Coordenadas sempre de CANVAS 1920x1080. 'bandas' = retângulos [x0, y0, x1, y1] onde o script mede a caixa de alfa frame a frame (a trilha que o texto segue). 'full' é medido sempre, sem precisar declarar. Ver docs/animacao-motion-lt.md §6.",
-	"fonte": "../../../../../Clash Favela Assets/latest",
-	"ffmpeg": "../../../../../Caspar-2.5.1/ffmpeg.exe",
+	"fonte": "<pasta da entrega>/latest",
+	"ffmpeg": "<pasta do Caspar>/ffmpeg.exe",
 	"fps": 24,
 	"pecas": {
 		"l3_single": {
@@ -27,8 +27,6 @@
 		"l3_winner": { "src": "L3_Winner.webm", "dst": ["graphics/assets/l3/l3_winner/l3_winner.webm"], "bandas": {} },
 		"l3_hashtag": { "src": "L3_Hashtag.webm", "dst": ["graphics/assets/l3/l3_hashtag/l3_hashtag.webm"], "bandas": {} },
 		"l3_social": { "src": "L3_Social.webm", "saida": "reversa", "dst": ["graphics/assets/l3/l3_social/l3_social.webm"], "bandas": {} },
-		"_l3_social_favela": "Versão com as redes do FAVELA (entrega 2026-11-14, latest/L3_Social_Favela.webm). Mesma peça lt_social.html: DB_LTSOCIAL.versao = 'favela' escolhe este vídeo.",
-		"l3_social_favela": { "src": "L3_Social_Favela.webm", "saida": "reversa", "dst": ["graphics/assets/l3/l3_social_favela/l3_social_favela.webm"], "bandas": {} },
 		"l3_palpite": {
 			"src": "L3_Palpite.webm",
 			"saida": "reversa",

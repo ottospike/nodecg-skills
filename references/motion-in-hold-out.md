@@ -59,6 +59,12 @@ webm e grava `<arte>.trilha.json` ao lado da cópia do bundle
   entrada de trás para frente, o script monta a saída invertendo a entrada no
   mesmo webm.
 
+**fps:** o script lê o fps de cada arquivo (ffprobe) e escreve as regras em
+quadros a 24 fps, escaladas por `Q(n) = n·fps/24`. Um export a 24 num canal de
+59,94 roda em cadência 2-3 e parece "low fps". Peça o fps do canal quando der.
+A **saída reversa** é a entrada de trás para frente, com uma fusão de ~6 quadros
+até a pose de repouso, para não ter salto na emenda hold → saída.
+
 Fluxo: `--medir` (só imprime inFim/loop/outIni/quietos para conferir) → rodar
 de verdade (os arquivos anteriores vão para `_removidos/<data>/`) → `--trilha`
 quando só uma faixa mudou (os segmentos não podem ter mudado, porque os

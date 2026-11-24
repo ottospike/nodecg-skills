@@ -203,6 +203,21 @@ stroke of width `w` the ring straddles the path: `dilate(sil, ceil(w/2)) & ~erod
 ⚠️ **`fillOpacity = 0` does not isolate the stroke** — it erases the layer. There is no export
 that gives you the outline alone; you have to rebuild it.
 
+**A third way to lose a stroke: the shape is a clipping base.** When a shape with a vector
+stroke has a clipped layer directly above it (`ls[i+1]._record.clipping`), Photopea paints the
+clipped layer **over the stroke**. The fill looks right and the outline is gone. Detect it from the
+PSD: visible shape, `stroke.enabled`, and the next layer clipped to it.
+`scripts/psd-plates/plates.py` → `auto_stroke_specs` finds all three cases (fill 0, partial fill,
+clipping base) for the layers a plate keeps.
+
+**Better rebuild: from the vector path, not the silhouette.** Morphology on the exported
+silhouette is fine for a quick fix, but it ignores `line_alignment` and rounds corners wrong.
+`fix_strokes` rasterises the layer's `vector_mask` (Bézier, 8× supersample), takes a signed
+distance field (`scipy.ndimage.distance_transform_edt` inside and outside), selects the ring by
+alignment (**inside** `0..w`, **outside** `-w..0`, **center** `±w/2`), downsamples with BOX and
+composites it with straight alpha at the descriptor's colour. It matches the designer's flat at
+the pixel level, corners included.
+
 ## Exporting plates — one per call
 
 `photopea_export_image` flattens and exports **the whole active document**. There is no
@@ -226,6 +241,32 @@ contain the wrong art. This is the Photopea version of the stale-reference trap 
 
 There is no `_plates.json` on this path, because the script cannot write files. Fold the return
 values straight into `assets.json` (`manifest-format.md`).
+
+## Plates em lote com psd-tools: export de frame cheio + `finish.py`
+
+A variant of the loop above that scales to a whole season of pieces
+(`scripts/psd-plates/`, `pip install psd-tools aggdraw scipy pillow numpy fonttools`):
+
+1. **In Photopea, export every plate at FULL FRAME** (visibility script → ping → export of the
+   whole 1920×1080 canvas, no trim) into a temp folder **outside** the bundle (`pp/*.png`).
+2. **`finish.py <spec.json>`** does the rest locally: rebuilds the lost strokes from the PSD
+   (`"strokes": "auto"`), trims each plate by the alpha bbox (`trim_save` asserts the plate is not
+   empty and returns `{x,y,w,h}` **from the file itself**, not from Photopea's report), writes it
+   to the assets folder with a `_reference.png`, and prints geometry + verification as JSON.
+3. **Verification by recomposition.** `verify` composites **all** plates bottom-up and diffs the
+   result against the designer's flat, both over grey 60. Dynamic text boxes are masked out
+   (`maskText`: the layer bbox ±4 px; `maskBoxes` for dynamic images). It reports
+   `px>8`, `px>24`, `max` and `examined_opaque`. This catches **missing art between plates**,
+   which a per-plate correlation never sees. `examined_opaque` near zero means the check
+   looked at nothing. That is a failed check, not a passed one.
+4. **`cmpshot.py <shot> <flat> <out>`** is the final gate on the **built HTML**: a browser
+   screenshot (page background forced to grey 60) against the flat, stacked as flat / render /
+   diff>24 in one image to look at.
+
+**`textspec.py <psd>`** dumps each text layer's real typography. It includes fields the
+inspector above misses: leading only when `AutoLeading=false`, `FontCaps` (small caps / all caps),
+`paraBox` only for paragraph text (`ShapeType==1`), `runFonts` when one layer mixes fonts, and
+the active effects with their colour (e.g. a Stroke on the text).
 
 ## What this path does not prove
 

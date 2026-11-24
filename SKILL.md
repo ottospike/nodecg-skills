@@ -52,12 +52,14 @@ Abra a referência correspondente ao trabalho.
 | Gráfico ou painel novo | [Modelo de gráfico](assets/grafico-modelo.html) e [modelo de painel](assets/painel-modelo.html) |
 | Tipos de peça, máquina de estados, texto e contrato de assets | [Famílias de peça](references/familias-de-peca.md) |
 | Kit de marca, arte nova, formatos e galeria de motion | [Produção de assets](references/producao-assets.md) |
-| PSD/PSB com camadas, plates e reconstrução HTML | [PSD para HTML](references/psd-to-html/README.md) |
+| PSD/PSB com camadas, plates e reconstrução HTML | [PSD para HTML](references/psd-to-html/README.md); lote com verificação por recomposição em `scripts/psd-plates/` |
 | Print ou PNG achatado | [Análise de PNG](references/psd-to-html/png-analysis.md) |
 | Vocabulário de peças e recorte de plates | [Tipos de peça](references/psd-to-html/tipos-de-peca.md) |
+| Montar KV/fullscreen: pilha vídeo → foto → moldura → plate → texto, foto entre dois vídeos, enquadrar retrato pelo alfa, padronizar catálogo, pior caso de texto | [Montagem de KV](references/montagem-kv.md) |
 | Entrada, saída e troca de conteúdo no HTML | [Animação com GSAP](references/animacao-gsap.md) |
 | Matte orgânico de tinta, pincel ou dissolve | [Spritesheet de máscara](references/spritesheet-mask-reveal.md) |
 | WebM com entrada, hold e saída, com texto sincronizado | [Motion IN/HOLD/OUT](references/motion-in-hold-out.md) |
+| WebM/MOV com alfa: ffprobe que esconde o alfa, encode, conferir janela e loop, fps, scripts de ingestão | [Vídeo com alfa](references/video-alfa.md) |
 | OBS vertical, áreas seguras, composição e foco | [Overlays verticais](references/obs-vertical.md) |
 | Cortes, loops, cues e mix no OBS | [Áudio ao vivo](references/audio-ao-vivo.md) |
 | Layout e componentes de painel | [Dashboard](references/dashboard-ui.md) |
