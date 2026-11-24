@@ -6,7 +6,8 @@ description: >-
   Replicants, manifesto de bundle, PLAY/OUT, timelines GSAP e áreas seguras.
   Cobre produção de assets a partir de kit de marca, análise de PNG achatado,
   conversão de PSD/PSB em plates e HTML via Photopea, Photoshop ou psd-tools,
-  matte de vídeo para spritesheet e organização de demandas do Google Drive.
+  matte de vídeo para spritesheet, WebM com alfa em IN/HOLD/OUT e organização
+  de demandas do Google Drive.
   Use também para saídas verticais no OBS, cues e loops de áudio, render no
   vMix, playout CasparCG (AMCP, OSC, camadas, templates, SDI/NDI) e deploy
   do NodeCG em Docker/Coolify, incluindo a persistência de Replicants.
@@ -61,9 +62,8 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
 | **A Motion mandou a peça como UM webm com entrada, hold e saída** e o texto tem que acompanhar a arte | `references/motion-in-hold-out.md` (+ `assets/motion/`, `scripts/motion-aplicar.mjs`) |
 
-O do Drive e os dois últimos são subskills completas: têm seu próprio fluxo, e você
-segue o documento inteiro em vez de só consultar. Entre neles pela primeira linha, que diz
-quando o documento se aplica.
+Siga o fluxo completo da referência quando a tarefa envolver Drive, PSD,
+matte de vídeo ou WebM com IN/HOLD/OUT.
 
 ---
 

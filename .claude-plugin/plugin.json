@@ -1,8 +1,8 @@
 {
 	"$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
 	"name": "nodecg",
-	"description": "Convenções para bundles NodeCG de broadcast ao vivo: replicants, GSAP, dashboard, ponte vMix/OBS, deploy e PSD→HTML.",
-	"version": "1.6.0",
+	"description": "Grafismo ao vivo com NodeCG, Replicants, GSAP, PSD→HTML, produção de assets, OBS vertical, áudio, vMix, CasparCG e deploy.",
+	"version": "1.7.0",
 	"author": {
 		"name": "Otavio Cavalcanti",
 		"url": "https://github.com/ottospike"

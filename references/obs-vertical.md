@@ -25,15 +25,20 @@ updates do transporte que o projeto já oferece.
   páginas como fontes individuais quando a operação precisar. Confira o limite
   real de conexões se cada iframe abrir seu próprio SSE. Uma saída pode
   compartilhar um stream ou usar HTTP/2 com limites suficientes no servidor e
-  no proxy. Use uma instância por peça na composição.
+  no proxy. Use uma instância por peça na composição. Audite o total de
+  conexões com preview, painel e saídas simultâneas. No ensaio, simule uma
+  conexão que ficou aberta sem publicar e confira se o watchdog recupera o
+  snapshot. Para posições por plataforma, repasse só os parâmetros que se
+  aplicam às peças filhas.
 
 ## PLAY, modo foco e recuperação
 
 - Uma peça que alterna entre detalhe e resumo fica na mesma página. O PLAY ou
   uma mudança relevante abre a versão detalhada. Depois de um prazo, o conteúdo
-  recolhe para uma forma compacta. O OUT funciona a partir de ambas. No
-  refresh, monte a aparência correspondente ao estado atual sem repetir a
-  entrada. Para relógios ou rotações, derive o quadro do prazo e do relógio do
+  recolhe para uma forma compacta. Se for uma gaveta, mantenha o cabeçalho
+  ancorado e desloque o corpo num trilho recortado. O OUT funciona a partir
+  de ambas as formas. No refresh, monte a aparência correspondente ao estado
+  atual sem repetir a entrada. Para relógios ou rotações, derive o quadro do prazo e do relógio do
   servidor, inclusive ao reconectar.
 - Derive o foco do destaque ativo e de seu prazo. Oculte temporariamente as
   peças concorrentes na composição e mantenha o estado de PLAY de cada uma.

@@ -53,8 +53,13 @@ Sem flag, a instalação é por máquina. Para que quem clonar um projeto NodeCG
 receba a skill, rode o `install` com `-s project` a partir da raiz do projeto — fica
 registrado no `.claude/settings.json` dele.
 
-Para atualizar depois de um push: `claude plugin update nodecg`, e reinicie a sessão.
+Para atualizar a instalação, sincronize o marketplace e o plugin. Depois
+reinicie a sessão.
 
+```bash
+claude plugin marketplace update nodecg-skills
+claude plugin update nodecg@nodecg-skills
+```
 
 <details>
 <summary>Sem plugin, por clone manual</summary>

@@ -10,7 +10,7 @@
     {
       "name": "nodecg",
       "source": "./",
-      "description": "Convenções para bundles NodeCG de broadcast ao vivo: replicants, GSAP, dashboard, ponte vMix/OBS, deploy e PSD→HTML.",
+      "description": "Grafismo ao vivo com NodeCG, Replicants, GSAP, PSD→HTML, produção de assets, OBS vertical, áudio, vMix, CasparCG e deploy.",
       "keywords": ["nodecg", "broadcast", "overlay", "gsap", "vmix", "replicant"]
     }
   ]

@@ -16,17 +16,19 @@ loops acionados na transmissão.
   Crie uma fonte e um ganho a cada acionamento. Para intro com loop, inicie no
   offset da intro e use `loopStart` e `loopEnd` na mesma fonte. A saída pode
   precisar de um clique durante o ensaio em navegador comum para liberar o
-  áudio.
+  áudio. Confira também o primeiro acionamento com cache frio e exponha
+  falhas de download e decodificação no diagnóstico do player.
 
 ## Disparo, STOP e verificação
 
 - Envie um ID único e o horário do servidor junto da cue. Se usar Replicant
   ou snapshot SSE, trate a cue como um disparo com validade curta. Ignore
   IDs já consumidos e pedidos vencidos. Na inicialização, alinhe a política
-  de replay com a operação. Se a exigência é tocar no máximo uma vez mesmo
-  depois de recarregar, mantenha o registro de consumo entre recargas ou
-  confirme o consumo no servidor. O projeto de origem aceitava cues recentes
-  na reconexão, com uma janela de 5 s.
+  de replay com a operação. O projeto de origem aceitava cues recentes na
+  reconexão com uma janela de 5 s e deduplicava pelo último ID em memória.
+  Isso permite repetir um disparo recente se a fonte for recarregada. Se a
+  operação exigir entrega no máximo uma vez, mantenha o registro de consumo
+  entre recargas ou confirme o consumo no servidor.
 - Controle o ganho dos sons em execução e faça o STOP geral baixar os ganhos
   antes de encerrar as fontes, inclusive as de loop. Use controles de corte
   no painel quando a produção precisar ajustar o trecho sem reexportar mídia.

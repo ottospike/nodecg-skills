@@ -36,9 +36,17 @@ da peça no playout.
 
 ## Motion como parte do kit
 
+| Material | Caminho |
+|---|---|
+| Sprite ou placa que precisa acompanhar o tamanho do texto | [HTML e GSAP](animacao-gsap.md) |
+| Matte orgânico entregue em vídeo | [Spritesheet de máscara](spritesheet-mask-reveal.md) |
+| WebM com alfa e fases de entrada, hold e saída | [Trilha de vídeo IN/HOLD/OUT](motion-in-hold-out.md) com texto dinâmico no HTML |
+
 - Faça uma galeria isolada com fundo quadriculado e controles para repetir cada
   preset. Aprove as entradas, trocas e saídas antes de distribuir os movimentos
   pelas peças. Aproveite o mesmo movimento-líder em componentes da mesma família.
+  Honre `prefers-reduced-motion` para tremores e flutuação ociosa. Se houver uma
+  opção de redução por URL no playout, confira que PLAY e OUT continuam funcionais.
 - Um preset pode combinar um recorte de papel, uma sombra dura e uma curva de
   assentamento. Para uma embalagem que rasga, separe visualmente a tira do corpo
   com dois recortes do mesmo sprite e mova a tira antes de revelar o conteúdo.
