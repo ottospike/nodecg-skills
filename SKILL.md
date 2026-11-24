@@ -1,6 +1,15 @@
 ---
 name: nodecg
-description: Tudo sobre gráficos de broadcast em bundles NodeCG — estrutura e estado em replicants (nunca sendMessage), nomes DB_*/lt_*/fs_*, um arquivo por painel e por gráfico, animação com GSAP, ponte vMix/OBS na extension, playout em CasparCG (AMCP, mapa de camadas, cena com MIX/STING, clipes e vinhetas, fontes SDI/NDI, gráfico do bundle numa camada HTML, template CG play/stop/update, estado real por OSC), performance de render dentro do browser source (animação que engasga no vMix, vídeo de canvas cheio, will-change), gramática de controles do dashboard (PLAY/OUT, selo no ar, SETAR), fontes locais, dev mode, deploy da instalação (Docker, Coolify, volume do banco de replicants), extração de plates de PSD via Photopea MCP (ou Photoshop MCP) ou psd-tools, e reveal por spritesheet de matte de vídeo. Use SEMPRE que o assunto for bundle NodeCG, overlay de transmissão, lower third, fullscreen, painel de dashboard, replicant, package.json de bundle, animação de entrada/saída, ou fiação com vMix/OBS/CasparCG — mesmo quando o pedido parece pequeno ("adiciona um botão", "põe esse valor no ar", "faz a barra entrar deslizando"). Use também quando a arte de um gráfico vier de .psd/.psb ("extrai as plates desse PSD", "transforma esse mockup em HTML", "preciso dos PNGs desse design", "faz essa barra de progresso funcionar"), quando vier só como imagem achatada sem camadas ("analisa esse PNG", "o designer só mandou o print", "descreve o que tem nessa arte", "quais assets eu preciso disso aqui"), quando for pôr a instalação no ar ("faz o deploy do NodeCG", "sobe isso num servidor", "dockeriza", "põe o painel numa URL"), quando o playout for CasparCG ("liga isso no Caspar", "põe o gráfico numa camada", "toca a vinheta no Caspar", "o template não responde ao CG PLAY", "manda o AMCP"), ou quando a transição for um matte de vídeo (.mov/.webm de tinta, pincel, dissolve) virando spritesheet. Use também quando o trabalho começar no Google Drive ("quais gráficos esse projeto pede", "lista as demandas do Drive", "baixa os PSDs do projeto", "monta a estrutura de pastas dos gráficos"), ou quando a dúvida for de vocabulário ("isso é um lower third ou um in-game?", "o que é área de interesse", "como decido o corte das plates"). É agnóstica de temática: descreve o esqueleto do grafismo, não a marca de um programa.
+description: >-
+  Crie e opere grafismo de broadcast em bundles NodeCG ou browser sources de
+  transmissão. Use para overlays, lower thirds, fullscreens, dashboards,
+  Replicants, manifesto de bundle, PLAY/OUT, timelines GSAP e áreas seguras.
+  Cobre produção de assets a partir de kit de marca, análise de PNG achatado,
+  conversão de PSD/PSB em plates e HTML via Photopea, Photoshop ou psd-tools,
+  matte de vídeo para spritesheet e organização de demandas do Google Drive.
+  Use também para saídas verticais no OBS, cues e loops de áudio, render no
+  vMix, playout CasparCG (AMCP, OSC, camadas, templates, SDI/NDI) e deploy
+  do NodeCG em Docker/Coolify, incluindo a persistência de Replicants.
 ---
 
 # Bundles NodeCG para broadcast
@@ -35,6 +44,9 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | **"Como essa ÁREA é construída?"** — a anatomia de runtime de um lower third, um fullscreen, um draft, um in-game, uma peça de canto, uma moldura de câmera: máquina de estados, gramática de movimento, arte em vídeo, medição de texto, contrato do `assets.json` | **`references/familias-de-peca.md`** |
 | **"Mudei no painel e o gráfico não atualiza"** | §4 (Como escrever) e o checklist final |
 | Animando entrada/saída, troca de conteúdo, stagger | `references/animacao-gsap.md` |
+| Produzindo assets a partir do guia de marca, kit do designer ou arte nova | [Produção de assets](references/producao-assets.md) |
+| Compondo uma saída 9:16 no OBS, com camadas, área segura e modo foco | [Overlays verticais no OBS](references/obs-vertical.md) |
+| Preparando cortes, loops e efeitos sonoros acionados no painel | [Áudio ao vivo](references/audio-ao-vivo.md) |
 | **A peça anima aos trancos DENTRO do vMix** e lisa no navegador · vai pôr vídeo de canvas cheio num gráfico · pensou em `will-change` | `references/render-no-vmix.md` |
 | Montando ou mexendo no layout de um painel | `references/dashboard-ui.md` |
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |

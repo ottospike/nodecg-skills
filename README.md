@@ -21,6 +21,9 @@ O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 | `references/psd-to-html/` | subskill: PSD → plates + manifesto → HTML |
 | `references/psd-to-html/png-analysis.md` | quando só existe o PNG achatado: medir, olhar, descrever |
 | `references/spritesheet-mask-reveal.md` | subskill: reveal por matte de vídeo |
+| [Produção de assets](references/producao-assets.md) | kit de marca, formatos, preparação para runtime e galeria de motion |
+| [Overlays verticais no OBS](references/obs-vertical.md) | 9:16, área segura, composição por plataforma e modo foco |
+| [Áudio ao vivo](references/audio-ao-vivo.md) | cortes, normalização, loops, acionamento pelo painel e mix no OBS |
 
 ## O que ela defende
 
