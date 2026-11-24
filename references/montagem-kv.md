@@ -1,8 +1,7 @@
 # Montagem de key visual e fullscreen: camadas, fotos, catálogos e texto
 
-Medido num bundle real de esports (temporada de nov/2026: 14 fullscreens, 9
-lower thirds, playout no CasparCG). Este arquivo trata do que acontece
-**depois** que as plates existem: como uma peça empilha vídeo, plate, foto
+Use este arquivo quando as plates já existem e falta montar a peça (fullscreen,
+key visual, lower third com playout no CasparCG). Ele cobre como uma peça empilha vídeo, plate, foto
 recortada, logo, carta e texto, e como os assets de catálogo (pessoas,
 times, itens do jogo) são padronizados para que a peça não precise de exceções.
 
@@ -107,8 +106,7 @@ tamanho e centrada. Proteções:
 - medição ruim conhecida (topo cortado no arquivo) → mediana do grupo;
 - uma tabela pequena de ajuste por arquivo, com o motivo de cada linha.
 
-**Proporções diferentes convivem.** Um retrato de rosto (ex.: 386×428, vindo
-de outro projeto) vai em `cover` no topo; o retrato padrão vai pelo
+**Proporções diferentes convivem.** Um retrato de rosto (ex.: 386×428) vai em `cover` no topo; o retrato padrão vai pelo
 enquadramento medido. O manifesto diz qual é qual.
 
 **Capa de corpo inteiro em KV:** `background-size: auto <altura maior que o

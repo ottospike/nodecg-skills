@@ -17,10 +17,8 @@ lower third ela cobra três coisas, e duas só aparecem no ar:
 
 - **A saída fica com a curva da entrada.** `transition` é simétrica por
   natureza: a peça entra com ease-out e **sai** com ease-out também — freando
-  enquanto vai embora, que é o contrário do que o olho espera. Numa auditoria de
-  kit, as duas únicas peças com transição CSS eram exatamente as duas cujo gesto
-  de saída divergia de todas as outras, e ninguém tinha percebido porque a
-  divergência morava numa linha de CSS, não na timeline.
+  enquanto vai embora, que é o contrário do que o olho espera. A divergência
+  mora numa linha de CSS, não na timeline, e passa despercebida.
 - **A saída fica mais longa.** Simétrica também na duração: 0,55s para limpar o
   quadro onde as irmãs levam 0,4s.
 - **O fim da saída vira adivinhação.** Pausar o vídeo, trocar o texto fora de
@@ -121,9 +119,8 @@ DB_X.on("change", (s) => {
 **4. Trava de on-air.** PLAY com a peça já no ar não re-anima. É a comparação
 `visivel !== noArNaTela` acima — sem ela, dois cliques seguidos dão dois wipes.
 
-**5. `set` + `to` numa string CSS lê o valor COLAPSADO pelo browser.** Esta
-custou um "metade da barra abre instantânea e a outra anima", que parece bug de
-easing e não é.
+**5. `set` + `to` numa string CSS lê o valor colapsado pelo browser.** Sintoma:
+metade da barra abre instantânea e a outra anima. Parece bug de easing e não é.
 
 ```js
 // PARECE certo e não é:
@@ -136,7 +133,7 @@ e esquerda=direita. O `to` vai buscar o início no computed, acha **dois** núme
 de um lado e **quatro** do outro, pareia componente a componente, e o que sobra
 salta pro valor final no primeiro quadro.
 
-Medido (Chromium, GSAP 3.12, valor do computed dois quadros depois do início):
+Valor do computed dois quadros depois do início (Chromium, GSAP 3.12):
 
 | forma | resultado | |
 |---|---|---|
@@ -188,7 +185,7 @@ gsap.fromTo(cards,
 
 ```js
 // `fromTo` nos dois trechos: com `to` puro, o segundo lê o início já colapsado
-// e a caixa fecha pelos QUATRO lados em vez de só topo/base (medido — armadilha 5).
+// e a caixa fecha pelos QUATRO lados em vez de só topo/base (armadilha 5).
 const ABERTA = "inset(0% 0% 0% 0%)";
 const FECHADA = "inset(50% 0% 50% 0%)";
 
@@ -241,12 +238,9 @@ animar igual à primeira, falta `set` no topo da timeline.
 
 ## Padronizar: só o movimento-líder
 
-Numa auditoria de um bundle com 12 peças animadas apareceram **11 durações e 11
-eases distintos de entrada, e zero tokens** — todo valor literal inline. A saída
-estava bem mais disciplinada (o mesmo ease em 7 de 8 peças), o que é o padrão:
-ninguém pensa muito na saída, então ela sai consistente por inércia.
-
-O erro seria uniformizar tudo. Uma peça anima em camadas com **verbos
+Bundles sem tokens de animação tendem a ter uma duração e um ease de entrada
+diferentes por peça, todos literais inline. A saída costuma ser mais
+consistente. Não uniformize tudo: Uma peça anima em camadas com **verbos
 diferentes**:
 
 - o **movimento-líder** — a barra que entra, a placa que desliza. É o que dá a
@@ -254,10 +248,9 @@ diferentes**:
 - os **tweens de acento** — o selo que dá pop com `back.out`, o texto que sobe
   com stagger. Esses acompanham a geometria de cada arte e têm razão para variar.
 
-Padronize o primeiro, deixe os segundos em paz. Na prática: escolha o valor que
-**a maioria das peças já usa** em vez de inventar um número novo — num caso real,
-5 de 12 peças já concordavam sozinhas, e alinhar as outras custou 7 linhas em 4
-arquivos.
+Padronize o primeiro, deixe os segundos em paz. Escolha o valor que **a maioria
+das peças já usa** em vez de inventar um número novo: alinhar as outras costuma
+custar poucas linhas.
 
 E não force o token de slide numa peça cujo verbo é outro. Uma peça que entra por
 `clip-path` ou por push-up com stagger não é um slide mais lento: padronizar o

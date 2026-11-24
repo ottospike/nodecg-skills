@@ -73,7 +73,7 @@ CMD ["node", "index.js"]
 
 **Sem toolchain de compilação.** O `better-sqlite3` (que vem pelo adapter de banco do
 NodeCG) é módulo nativo, e a tentação é instalar `python3 make g++` "por garantia".
-Medido: o `apt-get` custa **~7 min em todo deploy** e nunca é usado — a 12.11.1
+O `apt-get` custa **~7 min em todo deploy** e nunca é usado: a 12.11.1
 publica prebuild `node-v127` (Node 22) `linux-x64`. Confira que o prebuild da versão
 que você tem existe (release do WiseLibs/better-sqlite3, procure `node-v<ABI>-<os>-<arch>`)
 e deixe o toolchain fora. Se sumir um dia, o `npm ci` quebra alto — não em silêncio.
@@ -110,7 +110,7 @@ volumes:
 replicant `persistent: true` — times, canais, placar, o que o operador configurou. Se
 não for volume, cada redeploy devolve o painel em branco.
 
-🚨 **O banco de produção nasce vazio.** O `db/` do laptop não vai na imagem (e não
+**O banco de produção nasce vazio.** O `db/` do laptop não vai na imagem (e não
 deveria). Depois do primeiro deploy alguém tem que **reconfigurar tudo pelo dashboard
 de produção**. Planeje isso antes de uma transmissão, não durante.
 
@@ -118,7 +118,7 @@ Healthcheck com `node -e` porque a imagem `slim` não tem `curl` nem `wget`.
 
 ## 🚨 `host: "127.0.0.1"` no cfg = container de pé e domínio em 404
 
-É o erro que mais custa tempo, porque **o healthcheck passa**. Um
+O erro é difícil de achar porque **o healthcheck passa**. Um
 `cfg/nodecg.json` com `"host": "127.0.0.1"` é o certo no laptop e o errado dentro
 de um container: ligado só ao loopback, o processo não aceita conexão de fora, e
 o Traefik não conecta. Mas o healthcheck do compose bate em `127.0.0.1` **de
@@ -127,11 +127,10 @@ domínio responde 404, e não há uma linha de log em lugar nenhum.
 
 Use `cfg/nodecg.js` lendo `NODECG_HOST` (ver abaixo) com default `127.0.0.1`, e
 passe `NODECG_HOST=0.0.0.0` no `environment` do compose. O mesmo repo serve os
-dois sem ninguém ter que lembrar de trocar nada.
+dois sem troca manual.
 
-E **apague o `.json` ao criar o `.js`** — não renomeie mentalmente. Com os dois
-na pasta, qual vence depende da ordem de busca do cosmiconfig, e descobrir isso
-em produção é caro.
+**Apague o `.json` ao criar o `.js`.** Com os dois na pasta, qual vence depende
+da ordem de busca do cosmiconfig.
 
 ## `cfg/nodecg.js`: config que lê o ambiente
 
@@ -176,7 +175,7 @@ e se ligar depois, refaça as sources com o cliente parado.
 
 ## Coolify (build pack `dockercompose`)
 
-Armadilhas medidas, todas com o mesmo sintoma — **container de pé e 404 no domínio,
+Armadilhas, todas com o mesmo sintoma — **container de pé e 404 no domínio,
 sem nada no log**:
 
 **`SERVICE_FQDN_<SERVICO>_<PORTA>` não funciona em aplicação.** Essa variável mágica
@@ -207,7 +206,7 @@ create ou no PATCH.
 
 **`ports_exposes` nasce `80` e o create IGNORA o que você mandar.** Confira
 depois de criar e corrija por PATCH para a porta real (9090), senão o Traefik
-roteia para uma porta que ninguém escuta. O mesmo sintoma de sempre: container de
+roteia para uma porta onde nada escuta. O mesmo sintoma de sempre: container de
 pé, 404 no domínio.
 
 **Não existe `/api/v1/sources`.** Para criar app de repo privado você precisa do

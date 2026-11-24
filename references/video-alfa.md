@@ -1,8 +1,8 @@
 # Vídeo com alfa (webm VP9): receber, converter, conferir
 
-Medido num bundle real com playout no CasparCG 2.5.1 (nov/2026): todos os
-clipes de arte eram VP9 1920×1080 com alfa. Molduras com janela vinham de
-sequência PNG a 60 fps, e o motion entregava a 24 fps. Use junto com
+Use este arquivo quando receber arte em vídeo com alfa para o playout
+(CasparCG 2.5.1): clipes VP9 1920×1080 com alfa, molduras com janela vindas de
+sequência PNG (ex.: 60 fps) e entregas do motion em outro fps (ex.: 24). Use junto com
 `motion-in-hold-out.md` (peça IN/HOLD/OUT), `familias-de-peca.md` §8
 (`<video>` na peça) e `casparcg.md` §6 (clipes no servidor).
 

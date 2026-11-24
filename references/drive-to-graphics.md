@@ -9,8 +9,7 @@
 > traz pra máquina, dá nome e organiza; a extração em si é do outro documento. E
 > termina com a peça pronta na pasta de assets servida do bundle (§2).
 
-O designer trabalha no Drive, o bundle vive no disco, e ninguém mantém as duas
-pontas na cabeça. Esta é a ponte: **inventariar → escolher → baixar → extrair →
+O designer trabalha no Drive e o bundle vive no disco. Esta é a ponte: **inventariar → escolher → baixar → extrair →
 revisar → promover**. Cada seta é uma parada, não um pipeline que roda sozinho.
 
 O que justifica as paradas: um `.psd` de fullscreen passa de 300 MB, o Drive guarda
@@ -24,8 +23,7 @@ digitação por um gigabyte baixado à toa e uma pasta pela metade no ar.
 
 A árvore **varia de projeto pra projeto**. Não assuma caminho: descubra e confirme.
 
-O que foi observado no `LeagueTV Star League Edition`, como exemplo do formato — não
-como regra:
+Um formato comum, como exemplo, não como regra:
 
 ```
 <Projeto>/
@@ -54,8 +52,8 @@ espera não passa por extração de plates.
 
 ### Liste sempre pelos filhos da pasta, nunca por busca global de nome
 
-Esta é a armadilha que já está no Drive deste projeto: existem **duas gerações** de
-`L3`, `FS` e `TV`, de datas diferentes, e as duas declaram o mesmo pai. Listar os
+O Drive pode guardar **duas gerações** da mesma pasta (ex.: `L3`, `FS` e `TV`), de
+datas diferentes, e as duas declaram o mesmo pai. Listar os
 filhos de `Still` devolve só a geração viva; uma busca global por `mimeType = folder`
 ou por nome devolve as duas, sem nada no resultado dizendo qual é qual.
 
@@ -66,8 +64,8 @@ drive_list_files  query: "name contains 'L3'"             ✘ devolve lixo junto
 
 Uma peça extraída da geração velha passa por todas as verificações — o PSD abre, os
 plates saem, o manifesto fecha — e só aparece como errada quando o operador põe no ar
-uma arte que o designer já tinha substituído. Não há como detectar isso depois; a
-proteção é só descer pela árvore.
+uma arte que o designer já tinha substituído. Não há como detectar isso depois:
+desça pela árvore.
 
 ### O que conta como uma demanda
 
@@ -157,18 +155,18 @@ grep -rho "/bundles/<bundle>/[a-z]*/assets" graphics/ dashboard/ shared/ | sort 
 | `BUG_Replay.psd` | `bug_replay/` |
 
 A regra é uma frase: **tudo minúsculo, e cada palavra depois da primeira ganha
-maiúscula na inicial.** Sigla não é exceção — `VS` vira `vs`, `2CAM` vira `2cam`. A
-tentação de preservar sigla parece inofensiva e não é: ela obriga a decidir caso a
-caso o que é sigla (`CAM` é? `DECK` é?), e duas pessoas decidem diferente.
+maiúscula na inicial.** Sigla não é exceção — `VS` vira `vs`, `2CAM` vira `2cam`. Preservar
+sigla obriga a decidir caso a caso o que é sigla (`CAM` é? `DECK` é?), e duas
+pessoas decidem diferente.
 
 O nome do Drive **não é limpo** — há typo lá dentro (`TV_Defaut_Clean`, com o "l"
 faltando). A tradução não conserta typo: se o nome de origem está errado, a pasta
 nasce com o typo e o link com a origem se mantém. Corrigir de um lado só é o que
 quebra o rastreamento.
 
-**Pastas que já existem ficam como estão.** `ig_overlaymain`, `ig_torcidometro`,
-`ig_totalview` e `led_jogo` nasceram planas e minúsculas, antes desta convenção, e
-estão no ar. A regra vale pra pasta nova.
+**Pastas que já existem ficam como estão.** Pastas criadas antes desta convenção
+(planas e minúsculas, ex.: `ig_overlaymain`) e já no ar não são renomeadas. A regra
+vale pra pasta nova.
 
 ---
 
@@ -190,9 +188,9 @@ Os três estados saem da comparação entre o `modifiedTime` que o Drive reporta
 - **em dia** — existe, e o `modifiedTime` do Drive bate com o gravado
 - **PSD revisado** — existe, mas o Drive tem data mais recente que a gravada
 
-**Mostre o tamanho.** É o número que decide o que vale a pena baixar agora: o
-`FS_VS.psd` sozinho tem 313 MB, e `refs/` neste bundle já guarda 502 MB de PSD. Um
-"baixa tudo" nas 28 peças passa fácil do gigabyte.
+**Mostre o tamanho.** É o número que decide o que vale a pena baixar agora: um PSD
+de fullscreen sozinho passa de 300 MB, e um "baixa tudo" num projeto de algumas
+dezenas de peças passa fácil do gigabyte.
 
 Entregue a tabela e **pare**. A pessoa aponta o que vai rodar.
 
@@ -208,8 +206,8 @@ refs/<Nome_Original>.psd              ← o PSD, com o nome do Drive intacto
 └── _reference.png                    ← o achatado do designer
 ```
 
-O PSD vai pra `refs/` porque é onde os PSDs deste bundle já moram e porque `refs/`
-está no `.gitignore` — arte pesada não entra no repositório nem no deploy. Mantenha o
+O PSD vai pra `refs/` porque é onde os PSDs do bundle moram e porque `refs/`
+fica no `.gitignore` — arte pesada não entra no repositório nem no deploy. Mantenha o
 nome original do arquivo: é o que liga o PSD de volta à pasta do Drive quando chegar
 uma revisão.
 
@@ -223,14 +221,14 @@ cinza do mockup, tapa o vídeo inteiro se alguém apontar uma browser source pra
 
 Duas situações, e o que as separa é se **já existe alguém lendo a peça**.
 
-**Ninguém consome a peça ainda** — nenhum gráfico referencia a pasta, e ela não está em
+**Nada consome a peça ainda** — nenhum gráfico referencia a pasta, e ela não está em
 `nodecg.graphics`. Construa direto em `<assets>/<cat>/<peça>/`. Não há o que ler pela
 metade, e o staging só acrescentaria um movimento de arquivo no fim.
 
 **A peça já está no ar** — existe gráfico lendo o `assets.json` dela, ou uma browser source
 apontada pra ela no switcher. Construa em `refs/_wip/<cat>/<peça>/` e promova por movimento
 (§8). O risco aqui não é a pasta incompleta: é **substituir por baixo** de algo que o vMix
-já tem aberto. Em transmissão ao vivo não existe "eu ia arrumar depois".
+já tem aberto.
 
 O critério é verificável, não é julgamento:
 
@@ -265,8 +263,8 @@ não consegue dizer se o PSD mudou:
 
 ```json
 "origem": {
-  "driveFileId": "17J-PkUnKT2KAN0dh8ga7Ix8jNvONCdf8",
-  "driveModifiedTime": "2026-08-31T22:17:22.000Z",
+  "driveFileId": "<ID_DO_PSD_NO_DRIVE>",
+  "driveModifiedTime": "AAAA-MM-DDTHH:MM:SS.000Z",
   "psdOriginal": "L3_MetaLike.psd",
   "categoria": "l3"
 }
@@ -309,8 +307,8 @@ revisão:
 refs/_wip/l3/l3_metaLike/   →   <assets>/l3/l3_metaLike/
 ```
 
-O `refs/_wip/` fica vazio ao fim de cada peça. Pasta de trabalho que sobrevive vira,
-em uma semana, a pasta que alguém edita achando que é a boa.
+O `refs/_wip/` fica vazio ao fim de cada peça. Pasta de trabalho que sobra acaba
+editada no lugar da boa.
 
 Promover **não** liga a peça no ar: ela ainda precisa do HTML do gráfico, da entrada
 em `package.json` e do controle no dashboard. Isso é o corpo do `SKILL.md` e o
@@ -318,15 +316,15 @@ em `package.json` e do controle no dashboard. Isso é o corpo do `SKILL.md` e o
 
 ---
 
-## Armadilhas medidas
+## Armadilhas
 
-**A geração velha no Drive não se anuncia.** Já descrita na §1, e é a única aqui que
-produz arte errada no ar sem nenhum sintoma antes. Desça pela árvore.
+**A geração velha no Drive não se anuncia.** Ver §1: produz arte errada no ar sem
+nenhum sintoma antes. Desça pela árvore.
 
 **Tamanho não aparece na listagem de pasta.** O `size` vem por arquivo. Se o
-inventário não pedir, você descobre os 313 MB durante o download.
+inventário não pedir, você descobre as centenas de MB durante o download.
 
-**`refs/` está no `.gitignore` deste bundle.** É o que se quer pro PSD e pro `_wip/`,
+**`refs/` está no `.gitignore`.** É o que se quer pro PSD e pro `_wip/`,
 e é a razão de o material de trabalho não poluir o repositório. Mas quer dizer também
 que **nada em `refs/` sobrevive a um clone novo** — quem for retomar a peça em outra
 máquina baixa do Drive de novo. O que precisa sobreviver é o que foi promovido.

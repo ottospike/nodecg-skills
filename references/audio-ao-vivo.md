@@ -8,8 +8,8 @@ loops acionados na transmissão.
 - Registre cada cue com arquivo, início, fim, ganho, fade e início do loop
   quando houver. Os tempos são em segundos e devem caber na duração do áudio.
   Cues de intro, loop e intro seguida de loop podem apontar para o mesmo arquivo.
-- Ouça e meça o trecho que realmente toca. No projeto de origem, os efeitos
-  tiveram referência de −16 LUFS no corte. Ajuste a referência ao mix da live,
+- Ouça e meça o trecho que realmente toca. Como ponto de partida para
+  efeitos, use −16 LUFS no corte. Ajuste a referência ao mix da live,
   confira os picos e compare os cortes com voz e música ativas. Para loops,
   ouça várias voltas e confira a emenda no player final.
 - Sirva a mídia localmente e pré-decodifique um buffer Web Audio por arquivo.
@@ -24,8 +24,8 @@ loops acionados na transmissão.
 - Envie um ID único e o horário do servidor junto da cue. Se usar Replicant
   ou snapshot SSE, trate a cue como um disparo com validade curta. Ignore
   IDs já consumidos e pedidos vencidos. Na inicialização, alinhe a política
-  de replay com a operação. O projeto de origem aceitava cues recentes na
-  reconexão com uma janela de 5 s e deduplicava pelo último ID em memória.
+  de replay com a operação. Uma política possível: aceitar cues recentes na
+  reconexão com uma janela de 5 s e deduplicar pelo último ID em memória.
   Isso permite repetir um disparo recente se a fonte for recarregada. Se a
   operação exigir entrega no máximo uma vez, mantenha o registro de consumo
   entre recargas ou confirme o consumo no servidor.

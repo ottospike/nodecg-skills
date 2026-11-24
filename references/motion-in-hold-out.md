@@ -1,9 +1,8 @@
 # Peça com ENTRADA, HOLD e SAÍDA num webm só (texto HTML preso ao vídeo)
 
-Medido no bundle clash (entrega da Motion de 2026-11-08, oito lower thirds no
-ar, Caspar 2.5.1). Use quando a Motion manda **cada peça como um arquivo só**
+Use este arquivo quando a Motion manda **cada peça como um arquivo só**
 (ex.: 10 s, VP9 com alfa, 1920×1080, 24 fps) com entrada, hold e saída
-embutidos, e o texto continua vivo em HTML.
+embutidos, e o texto continua vivo em HTML (playout no Caspar 2.5.1).
 
 Regra que vale sempre: **texto e dado ficam em HTML.** Texto queimado no vídeo
 não muda com o dado.
@@ -105,6 +104,6 @@ keyframes são os da última reencodagem).
   mas cada frame dura dois quadros.
 - Se a arte mudar de **lugar** numa entrega nova, revise as faixas e as
   `.janela` das páginas.
-- Confira cada entrega quadro a quadro. Já veio retângulo branco chapado
-  atravessando a arte em 6 quadros da entrada: era um track matte perdido no
-  export. O defeito estava no arquivo da Motion, não no HTML.
+- Confira cada entrega quadro a quadro. Um track matte perdido no export
+  aparece como retângulo branco chapado atravessando a arte em alguns quadros;
+  o defeito está no arquivo da Motion, não no HTML.

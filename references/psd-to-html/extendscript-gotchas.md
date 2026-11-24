@@ -1,8 +1,8 @@
 # ExtendScript traps
 
-Everything here was learned by watching a script return confident, wrong output. The bundled
-scripts already handle all of it — this file exists for when you write custom JSX, or when a
-result looks plausible but the PNG is wrong.
+Each trap below makes a script return confident, wrong output. The bundled scripts already
+handle all of them. Read this when you write custom JSX, or when a result looks plausible but the
+PNG is wrong.
 
 **Applies to both bridges.** Photopea's scripting API is ExtendScript-shaped — same
 `app.activeDocument`, `ArtLayer`, `LayerSet`, and the same silent invalidation of layer
@@ -12,7 +12,7 @@ the Photopea equivalents live in `photopea-mcp.md`.
 
 ## Layer references go stale after any reorder
 
-The single most expensive trap. `move()`, `remove()`, `translate()` on a sibling, merging a
+`move()`, `remove()`, `translate()` on a sibling, merging a
 group — any of these silently invalidate `ArtLayer` **and** `LayerSet` references you're
 holding. The stale reference doesn't throw; it starts pointing at a neighbouring layer.
 
@@ -43,8 +43,8 @@ below. Moving anything into the stack above it quietly breaks the clip — and t
 reporting `grouped === true`. Keep the clip pair isolated: move unrelated layers out to the
 document root first (`layer.move(doc, ElementPlacement.PLACEATBEGINNING)`), clip last.
 
-**The DOM `.grouped` setter is a no-op when it thinks nothing changed.** Because Photoshop
-releases clips on its own during reordering, the DOM value and the real state drift apart.
+**The DOM `.grouped` setter is a no-op when it thinks nothing changed.** Photoshop releases
+clips on its own during reordering, so the DOM value and the real state drift apart.
 Setting `.grouped = true` on something the DOM already believes is clipped does nothing, and
 you export unclipped art. Use Action Manager, which doesn't cache:
 
@@ -105,8 +105,8 @@ Text is friendlier — `textItem.font` (PostScript name), `.size`, `.color.rgb.h
 
 ## Working through the Photoshop MCP
 
-Photopea is the default bridge — for its tool map, identity probe and export loop see
-`photopea-mcp.md`. What follows is the Photoshop MCP path.
+Photopea is the default bridge; its tool map, identity probe and export loop are in
+`photopea-mcp.md`. This section covers the Photoshop MCP path.
 
 - `photoshop_ping` once per session, not per call.
 - **`execute_script` can be a silent no-op.** It returns `"Custom script executed"` and
@@ -117,9 +117,9 @@ Photopea is the default bridge — for its tool map, identity probe and export l
 - **The active document is not necessarily the one you opened.** `photoshop_open_image` returns an
   id, but focus can sit on a file the user already had open. Match `photoshop_get_state`'s name
   and layer count against your PSD; if `get_state` and `get_layers` disagree with each other, the
-  bridge is stale. Never send visibility toggles or other mutations to an unidentified document —
+  bridge is stale. Never send visibility toggles or other mutations to an unidentified document:
   layer names like `Rectangle 3 copiar 2` and `Background` exist in every file in a project, so
-  the calls will happily "succeed" against the wrong one.
+  the calls succeed against the wrong one.
 - **`save_document` takes `path`, not `filePath`** — the wrong key fails with
   `Cannot read properties of undefined (reading 'replace')`.
 - **Script timeouts.** Each document duplicate on a large PSD is slow; ~4–6 duplicates exceeds
@@ -135,7 +135,7 @@ Photopea is the default bridge — for its tool map, identity probe and export l
 - **Windows paths**: escape backslashes in JSX string literals, and remember project paths
   containing `[brackets]` are glob patterns to PowerShell — the Bash tool handles them fine.
 
-## Debugging technique that actually works
+## Debugging technique
 
 When a script returns wrong bounds, don't guess. Duplicate the document, run the steps
 manually, and return the layer structure at each stage instead of exporting:
@@ -150,6 +150,5 @@ for (var i = 0; i < grp.layers.length; i++)
 return out;
 ```
 
-Leave the debug document open between calls and keep poking at it. Seeing `grouped=false`
-where you expected `true` — or a name you didn't expect at an index — locates the bug
-immediately, where reasoning about the script's control flow rarely does.
+Leave the debug document open between calls and keep inspecting it. A `grouped=false` where
+you expected `true`, or an unexpected name at an index, locates the bug directly.

@@ -1,7 +1,7 @@
 # Fallback: extracting without Photoshop
 
-The MCP bridge is the primary path — Photopea by default, Photoshop as the alternative — but it
-can be dead in ways that look like success — see
+The MCP bridge is the primary path (Photopea by default, Photoshop as the alternative), but it
+can be dead in ways that look like success; see
 [Is the bridge actually working?](#is-the-bridge-actually-working). When it is, drive everything
 from Python with **psd-tools**: it is read-only, deterministic, never touches the user's open
 documents, and on a well-behaved PSD it reproduces Photoshop's own export pixel for pixel.
@@ -10,12 +10,12 @@ documents, and on a well-behaved PSD it reproduces Photoshop's own export pixel 
 python -m pip install psd-tools aggdraw fonttools
 ```
 
-All three are required. `aggdraw` is not optional — see below.
+All three are required, `aggdraw` included (see below).
 
 ## Is the bridge actually working?
 
-Before trusting either MCP with anything, prove two things. Both of these have failed
-silently in practice, and both produce confident, wrong output rather than an error.
+Before trusting either MCP with anything, prove two things. Both fail silently and produce
+confident, wrong output rather than an error.
 
 **1. Does `execute_script` actually run?** It can return `"Custom script executed"` and
 `Result: undefined` while doing nothing at all. Probe it with an observable side effect and check
@@ -29,62 +29,57 @@ Then call `photoshop_get_layers` and look for `__PROBE__`. If it isn't there, `$
 running and the whole JSX path in this skill is unavailable. Switch to psd-tools.
 
 **2. Which document is active?** `photoshop_open_image` returning a document id does **not** mean
-that document stays active — focus can sit on something the user had open. Call
+that document stays active: focus can sit on a document that was already open. Call
 `photoshop_get_state` and match the name and layer count against the PSD you opened. If
 `get_state` and `get_layers` disagree with each other (e.g. 21 vs 41 layers), the bridge is stale;
 stop and do not send mutating calls.
 
-This matters because layer-visibility toggles are how plates get exported, and a toggle sent to
-the wrong document silently edits someone else's work. Verify before the first mutation, not
-after.
+Layer-visibility toggles are how plates get exported, and a toggle sent to the wrong document
+silently edits another file. Verify before the first mutation, not after.
 
-## The one trap that will cost you a wrong deliverable
+## The `composite(force=True)` trap
 
 **`composite()` is faithful. `composite(force=True)` is not.**
 
 - `psd.composite()` reuses the flattened image Photoshop stored inside the PSD. Measured against
   a designer's own PNG export: **0 differing pixels, max channel delta 0.**
 - `psd.composite(force=True)` makes psd-tools re-render everything itself, including layer
-  effects — and it gets **Gradient Overlay wrong**. On a real lower-third the name's
-  `#E24E1B → #FF0176` ramp came out compressed to a near-flat `#FF1845 → #FF2233`: 8602 differing
-  pixels, max delta 58. It looked plausible, got written into the manifest, and the designer
-  spotted it immediately ("parece tudo vermelho").
+  effects, and it gets **Gradient Overlay wrong**. Example: a `#E24E1B → #FF0176` ramp comes out
+  compressed to a near-flat `#FF1845 → #FF2233` (8602 differing pixels, max delta 58). The result
+  looks plausible.
 
-`force=True` is exactly what you need to render a subset of layers — so **every plate is rendered
-through the unreliable path.** The rule that follows:
+`force=True` is what you need to render a subset of layers, so **every plate is rendered
+through the unreliable path.** Rule:
 
 > Never read a colour, gradient or effect value off a plate render. Read it from the layer
 > descriptor, then verify against plain `composite()` or the designer's exported PNG.
 
-**And it is worse than wrong values: a Stroke effect is dropped entirely.** Measured on
-`L3_PicksBans` against the same plates exported through Photopea — a ban badge came back
-118x118 instead of 124x124 (**516 black outline pixels missing**), and a plaque 514x184 instead
-of 520x188 (**1734 missing**). The black outline is the whole visual language of that project,
-so the plate is not "slightly off", it is unusable — and the alpha bbox shrinks with it, which
-means the canvas coordinate you record is wrong too. Only a plate with no effects matched
-exactly (a flat text mark, 25x146, byte-identical).
-
-So the earlier line in this document — "geometry comes through correctly" — does not hold once
-layer effects are in play, and in this visual language they always are. The rule:
+**A Stroke effect is dropped entirely.** Compared with the same plates exported through
+Photopea: a badge comes back 118x118 instead of 124x124 (**516 outline pixels missing**), a
+plaque 514x184 instead of 520x188 (**1734 missing**). The alpha bbox shrinks with it, so the
+canvas coordinate you record is wrong too. Only plates with no effects match exactly (e.g. a
+flat text mark, 25x146, byte-identical). Geometry is reliable only on effect-free layers. Rule:
 
 > **Never ship a plate rendered by psd-tools when the layer or its group carries a Stroke, Drop
 > Shadow or Gradient Overlay.** Audit first (`layer.effects` per kept path); if anything is
 > enabled, that plate goes through the bridge. Geometry and plain artwork on an effect-free
 > layer are still fine.
 
-Two practical consequences. First, `pip install 'psd-tools[composite]'` is what makes
-`force=True` run at all — without `aggdraw` it raises on vector shapes and without
-`scikit-image` it raises on effects; installing them stops the exception but does **not** make
-the effect faithful, so a successful render is not evidence of a correct one. Second, this is
-what splits the work when several agents extract in parallel: reading, measuring and deciding
+Two practical consequences:
+
+1. `pip install 'psd-tools[composite]'` is what makes `force=True` run at all: without `aggdraw`
+   it raises on vector shapes and without `scikit-image` it raises on effects. Installing them
+   stops the exception but does **not** make the effect faithful; a successful render is not
+   evidence of a correct one.
+2. It splits the work when several agents extract in parallel: reading, measuring and deciding
 the plates is local, deterministic and parallel; **the export is serial, because the bridge has
 one active document.** Have the parallel workers emit a spec — `[{ "out": "...", "keep":
 ["9", "7/2"] }, ...]` in index paths — and run the exports from it yourself, one at a time.
 
 **Color Overlay has a related bug:** psd-tools applies it only to fully-opaque pixels, so the
-layer's original artwork bleeds through the antialiased edges. A notch whose Color Overlay was
-navy `#1E1E30` shipped with a magenta fringe from the orange art underneath. Rebuild such a layer
-by hand — take its alpha, fill it with the overlay colour:
+layer's original artwork bleeds through the antialiased edges (e.g. a navy `#1E1E30` overlay on
+orange art leaves a magenta fringe). Rebuild such a layer by hand: take its alpha, fill it with
+the overlay colour:
 
 ```python
 notch_alpha = render_only([6]).split()[3]
@@ -95,14 +90,14 @@ flat = Image.alpha_composite(base, notch)
 
 **A clipping layer rendered alone comes back 100% transparent.** Hide everything
 but one layer whose `clipping` flag is set and `composite(force=True)` returns an
-image with `alpha.max == 0` — no error, no warning. The layer has nothing to clip
+image with `alpha.max == 0`, with no error or warning. The layer has nothing to clip
 against, so it renders nothing. `getbbox()` then returns `None`, and any export
 helper that falls back to the nominal crop box writes a plausibly-sized, entirely
-empty PNG. It looks right in the file listing and it is blank on air.
+empty PNG that looks right in the file listing and is blank on air.
 
 Check the flag before exporting (`layer._record.clipping`), and to get the art at
-full extent — which is what you want, because in HTML the clipping is done by the
-slot's `overflow: hidden` — clear it for the render and put it back:
+full extent (what you want, because in HTML the clipping is done by the slot's
+`overflow: hidden`), clear it for the render and put it back:
 
 ```python
 antes = layer._record.clipping
@@ -111,13 +106,13 @@ img = psd.composite(force=True, ignore_preview=True)
 layer._record.clipping = antes
 ```
 
-Cheap guard that would have caught it: assert `img.getchannel("A").getextrema()[1] > 0`
-on every plate you write. A plate whose alpha never exceeds 0 is not a plate.
+Guard: assert `img.getchannel("A").getextrema()[1] > 0` on every plate you write. A plate
+whose alpha never exceeds 0 is empty.
 
-**`aggdraw` is mandatory.** Without it, vector shape layers raise on `composite()` — but if you
-catch or skip that, they render *fully transparent*. A slanted decorative shape simply vanished
-from a plate and the export looked clean. Install it, then re-verify anything exported before it
-was present.
+**`aggdraw` is mandatory.** Without it, vector shape layers raise on `composite()`; if you
+catch or skip that, they render *fully transparent* and the shape disappears from the plate
+while the export looks clean. Install it, then re-verify anything exported before it was
+present.
 
 ## Reading the document
 
@@ -202,8 +197,8 @@ print(sum(hist[1:]), "differing px, max delta", max(i for i, c in enumerate(hist
 Expect `0, max delta 0`. Anything else means a layer is being mis-rendered and you should find out
 which before exporting a single plate.
 
-For plates, recomposite over the mockup's backdrop colour — sample it, don't assume `#808080`; one
-mockup used `#7C7C7C` and assuming grey 128 tripled the apparent error — and diff only outside
+For plates, recomposite over the mockup's backdrop colour (sample it, don't assume `#808080`:
+on a `#7C7C7C` backdrop, assuming grey 128 can triple the apparent error), and diff only outside
 the boxes where dynamic text was removed. Separate *interior* from *edge* differences: interior
 pixels should match within rounding, while the plate's outermost antialiased rows will always
 differ, because lifting antialiased art off a backdrop cannot be lossless. Report both numbers
@@ -215,5 +210,5 @@ designer's render. Matching within 1px on every field confirms the numbers befor
 written. Antialiasing will differ; box geometry should not.
 
 For a gradient, sample the **saturated core** of each glyph row (`R >= 250`), not the mean of all
-glyph pixels — antialiased edge pixels drag the average toward the background and flatten the
+glyph pixels: antialiased edge pixels drag the average toward the background and flatten the
 ramp you are trying to measure.

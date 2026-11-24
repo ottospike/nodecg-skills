@@ -28,8 +28,8 @@ O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 ## O que ela defende
 
 - **Estado, nunca evento.** Toda comunicação entre dashboard, graphics e extension
-  é replicant — inclusive "põe no ar". Mensagem é evento que passa: uma browser
-  source que recarrega volta em branco e ninguém percebe até estar no ar.
+  é replicant, inclusive "põe no ar". Mensagem é evento que passa: uma browser
+  source que recarrega perde a mensagem e volta em branco.
 - **Um arquivo por peça.** Painel e gráfico levam markup, estilo e script juntos.
 - **Frame inteiro sempre.** Até um lower third de 421×106 mora num stage 1920×1080,
   ancorado pela coordenada de canvas do PSD.

@@ -7,34 +7,18 @@ extension, mídia e fontes, o gráfico HTML rodando dentro do Caspar, o contrato
 template CG (`play/stop/next/update/remove`), o estado real por OSC, os botões do
 painel e como ensaiar direto no servidor.
 
-**Base de versão: servidor 2.4 ou mais novo; conferido no fonte da 2.5.1**
-(tag de 2026-09-16, CEF 142). Onde a 2.4 difere, está dito. A wiki oficial
-(casparcg.com/docs) ainda descreve a 2.0/2.1 em boa parte — **na dúvida entre a
-wiki e este documento, o fonte decidiu**.
+**Base de versão:** servidor 2.4 ou mais novo, conferido no fonte da 2.5.1
+(CEF 142). Onde a 2.4 difere, está dito. A wiki oficial (casparcg.com/docs)
+ainda descreve a 2.0/2.1 em boa parte; na dúvida entre a wiki e este documento,
+vale o que está aqui, que segue o fonte. O comportamento descrito foi conferido
+num servidor 2.5.1; o que é só leitura de fonte está marcado *(fonte)*.
 
-**Medido num servidor 2.5.1 real em 2026-09-28** (RTX 3070, Windows 11, dois
-canais 1080p5994), com os módulos desta skill: `VERSION`/`INFO`/`CLS`/`TLS`;
-lote `BEGIN/COMMIT` (fundo + HTML); OSC chegando na 6250 e resumido (~1
-publicação/s); `CG ADD` com `dadosCG()` de dado hostil (aspas, `\`, quebra de
-linha, `$`, acento) chegando **idêntico** na página; `play()` enfileirado antes
-do `CASPAR.ligar()` rodando depois; XML do Client; JSON cru com aspas
-quebrando (`missing ) after argument list` no log — o bug é real); `CG PLAY`
-numa camada de `PLAY [HTML]`; `CALL` e `CALL RELOAD`; `CG REMOVE` deixando a
-camada ocupada; STING com parênteses; vinheta com `LOADBG EMPTY AUTO` se
-limpando sozinha; `PRINT`. O que ainda é só leitura de fonte continua marcado
-*(fonte)*.
+**Saída pela janela.** Quando o programa é consumido pelo consumer `screen` (a
+janela do Caspar num monitor, ou num LED ligado como monitor), com NDI como
+saída secundária e sem Decklink na cadeia principal, muda como se confere alfa,
+o que acontece se alguém fechar a janela e qual `video-mode` usar: §12.
 
-**Neste projeto a saída é a JANELA.** O programa é consumido primariamente pelo
-consumer `screen` — a janela do Caspar num monitor (ou num LED ligado como
-monitor) —, com NDI como saída secundária. Não há Decklink na cadeia principal.
-Isso muda como se confere alfa, o que acontece se alguém fechar a janela, e qual
-`video-mode` usar: §12.
-
-**A instalação do projeto é a 2.5.1**, em `…\[LEAGUETV] BRAWLSTARS\Caspar-2.5.1`
-(config comentado, scanner com o nome corrigido, mídias trazidas da antiga). A
-2.4.0 anterior ficou intacta em `…\Caspar`, com o config e os logs de um projeto
-anterior — é de onde saíram as lições do §13. Se uma máquina ainda estiver na
-2.4, isto é o que ela **não** tem e este documento cita:
+**Máquina ainda na 2.4.** Isto é o que ela não tem e este documento cita:
 
 | Recurso | Desde |
 |---|---|
@@ -68,7 +52,7 @@ O vMix é um **switcher** com mesa: tem inputs, preview, programa, e o operador
 corta na mão quando quer. O Caspar é um **servidor de playout sem mesa**: tem
 canais (cada um é uma saída) e camadas empilhadas dentro de cada canal, e **só
 faz o que um cliente manda por TCP**. Consequência: com Caspar, **a extension do
-bundle É o switcher.** Tudo que no vMix a mesa fazia sozinha — cortar para uma
+bundle é o switcher.** Tudo que no vMix a mesa fazia sozinha — cortar para uma
 cena, voltar ao programa, rodar a vinheta — passa a ser comando que a extension
 emite a partir de um replicant.
 
@@ -109,10 +93,9 @@ tudo no dia do programa:
 | 50 | lower thirds (HTML, sempre carregado) | carregada no boot; o ar é replicant |
 | 90 | stinger / vinheta de cobertura | a extension |
 
-🚨 **Nenhuma camada sua em 9999.** É a camada que o CG usa quando o comando não
-diz qual (`CG 1 ADD …` = `CG 1-9999 ADD …`). No projeto anterior os stingers
-tocavam em `1-9999` — um `CG ADD` sem camada, de qualquer cliente, derrubaria o
-stinger no meio da transição.
+**Não use a camada 9999.** É a camada que o CG usa quando o comando não diz
+qual (`CG 1 ADD …` = `CG 1-9999 ADD …`). Um stinger em `1-9999` é derrubado no
+meio da transição por um `CG ADD` sem camada vindo de qualquer cliente.
 
 As famílias da skill mapeiam assim — **e a regra de quem anima não muda**:
 
@@ -200,7 +183,7 @@ Como no vMix, nome que tem de bater com outro sistema **não fica no código**:
 
 - **`enabled: false`** desliga só os comandos de ar: numa máquina sem Caspar o
   painel funciona inteiro e os comandos viram log (é o `ativo:false` do cliente).
-- **`nodecgUrl` é a pegadinha nº 1.** O comando `PLAY [HTML]` é executado **pelo
+- **`nodecgUrl` aponta para onde o CASPAR alcança o NodeCG.** O comando `PLAY [HTML]` é executado **pelo
   Caspar**, então `127.0.0.1` ali é a máquina do Caspar. Com NodeCG e Caspar em
   máquinas diferentes — ou NodeCG em Docker —, a camada abre em branco, o AMCP
   responde `202 PLAY OK` mesmo assim (o carregamento é assíncrono) e o erro só
@@ -300,8 +283,8 @@ servidor encadeia no quadro certo.
 
 ### Reconciliar: o Caspar voltou, o bundle reconstrói
 
-O cliente **não enfileira** comando com a conexão caída — um fullscreen pedido às
-21:03:10 e executado às 21:03:40 é pior que nenhum. Em vez de fila, a extension
+O cliente **não enfileira** comando com a conexão caída: um fullscreen executado
+30 s depois do pedido é pior que nenhum. Em vez de fila, a extension
 **reconstrói o estado** toda vez que a conexão sobe (boot do NodeCG, Caspar
 reiniciado, cabo de rede que voltou):
 
@@ -337,18 +320,17 @@ Aqui aparece o que o modo A compra: as peças permanentes voltam **no estado
 certo sem a extension saber qual era** — cada uma relê o seu replicant. Nenhuma
 lista de "o que estava no ar" precisa existir.
 
-🚨 **A reconciliação recarrega as camadas no boot do NodeCG também.** Se o
-NodeCG reinicia no meio do programa com o Caspar no ar, as camadas permanentes
-são recarregadas (um reload de Chromium) — com a trava de primeiro estado (§6
-do SKILL.md), uma barra que estava no ar volta no ar sem re-animar, então no ar
-isso é imperceptível *desde que a trava exista*. Para não tocar no que já está carregado, use a versão abaixo.
+**A reconciliação acima também roda no boot do NodeCG.** Se o NodeCG reinicia
+no meio do programa com o Caspar no ar, as camadas permanentes são recarregadas
+(um reload de Chromium por camada). Com a trava de primeiro estado (§6 do
+SKILL.md), uma barra que estava no ar volta no ar sem re-animar, mas cada reload
+pisca. Para não tocar no que já está carregado, use a versão abaixo.
 
 ### Reconciliar SEM PISCAR: pergunte ao Caspar antes de mandar qualquer coisa
 
-> Medido no bundle clash (2026-11-12). A produção pediu: "restart do NodeCG não
-> pode derrubar nem piscar a arte". O `conectou` acima recarrega tudo, e cada
-> reload de Chromium pisca. A versão de produção **lê o OSC primeiro** (§7) e
-> só carrega o que falta.
+Regra: um restart do NodeCG não pode derrubar nem piscar a arte. Para isso, no
+`conectou`, **leia o OSC primeiro** (§7) e carregue só o que falta. Decida por
+caso:
 
 - **Página permanente já carregada** (camada com produtor `html` e a URL dela):
   **não recarrega**. Ela reconecta sozinha ao NodeCG, recebe o mesmo estado (os
@@ -401,7 +383,7 @@ caspar.enviar(`CLEAR ${CANAL}`);                       // limpar o canal INTEIRO
 caspar.enviar(`MIXER ${CANAL} MASTERVOLUME 0`);        // mudo geral
 ```
 
-Duas coisas do protocolo, medidas no servidor real:
+Duas regras do protocolo:
 
 - **`PING` não aceita `REQ`**: `REQ x PING` volta `400 ERROR`. O keepalive do
   cliente manda `PING` cru, por fora do `enviar()` — não mande PING por ele.
@@ -504,13 +486,13 @@ PLAY 1-5  EMPTY                                 transparente
 
 ### Saídas (config, ou em tempo de execução)
 
-- **`<screen>` — a saída principal deste projeto.** Tudo sobre ela no §12.
+- **`<screen>`**: a janela do Caspar num monitor. Tudo sobre ela no §12.
 - `<ndi><name>GC</name></ndi>` (ou `ADD 1 NDI NAME "GC"`) publica o canal como
   NDI **com alfa** — é como o vMix ou o OBS recebem o Caspar como uma fonte só.
 - `<decklink>` com `<keyer>external</keyer>` = **fill e key** em duas saídas SDI
   para o switcher de outra mesa; `internal` = o próprio card keya sobre a
-  entrada. **Não há placa instalada neste projeto**: o bloco fica comentado no
-  config de referência (§12), pronto para descomentar quando for testar SDI.
+  entrada. Sem placa instalada, deixe o bloco comentado (config de referência,
+  §12) e descomente só para testar SDI.
 
 ---
 
@@ -557,7 +539,7 @@ Por que o módulo é do jeito que é:
 - **Os endereços da wiki estão obsoletos.** Desde a 2.2 o estado da camada fica
   sob `…/stage/layer/L/foreground/…` (`producer`, `file/path`, `file/name`,
   `file/time`, `paused`, `loop`, `frames_left`).
-- 🚨 **Porta ocupada.** O CasparCG Client na mesma máquina também escuta a 6250
+- **Porta ocupada.** O CasparCG Client na mesma máquina também escuta a 6250
   e os dois não dividem a porta. O sintoma é `recebendo: false` com
   `conectado: true`. Saída: `OSC SUBSCRIBE 6251` pelo AMCP (2.4+; vale enquanto a
   conexão durar — mande no `conectou`) e `ouvirOSC({ porta: 6251 })`.
@@ -581,9 +563,9 @@ outro qualquer.
 
 ## 8. O gráfico dentro do Caspar: o que muda no render
 
-### Compatibilidade — medida dentro do Caspar 2.5.1 (2026-09-28)
+### Compatibilidade do Chromium do Caspar 2.5.1
 
-Uma página de teste rodando numa camada do servidor, GPU desligada (o padrão):
+Página de teste numa camada do servidor, GPU desligada (o padrão):
 
 | O quê | Resultado |
 |---|---|
@@ -673,7 +655,7 @@ faz, lido no fonte (`html_cg_proxy.cpp`):
 | `CG 1-50 CLEAR` | destrói o produtor da camada |
 | `CALL 1-50 "<qualquer js>"` | executa o JS; também funciona em camada carregada por `PLAY [HTML]` |
 
-Consequências, cada uma um bug esperando:
+Consequências, e o que fazer com cada uma:
 
 1. **A página aparece no ADD, não no PLAY.** O estado inicial da peça tem que ser
    FORA do quadro — a trava de primeiro estado da skill já garante isso.
@@ -701,9 +683,9 @@ Consequências, cada uma um bug esperando:
 7. **Dado inline tem que começar com `{` ou `<`.** Qualquer outra coisa (inclusive
    um array `[…]`) é tratada como **nome de dataset** em disco (`DATA STORE`).
 8. **Não mande `CG` para uma camada no meio de uma transição.** O fonte indica
-   `403` (durante um `MIX` o produtor da camada é `transition`), mas no servidor
-   real um `CG PLAY` 300ms dentro de um `MIX 120` voltou **`202`** — então não
-   conte com o erro para saber que não funcionou. Espere a transição acabar.
+   `403` (durante um `MIX` o produtor da camada é `transition`), mas na 2.5.1 um
+   `CG PLAY` 300ms dentro de um `MIX 120` volta **`202`**. Não conte com o erro
+   para saber que não funcionou: espere a transição acabar.
 
 **Formatos que chegam em `update()`** — a peça não precisa saber qual,
 `utils/caspar.js` normaliza para objeto:
@@ -790,11 +772,9 @@ A gramática é a do SKILL.md §8, sem exceção. O que o Caspar acrescenta:
 
 ### Modo teste: PREVIEW no canal 2, sem tocar no ar
 
-> **Revisto em 2026-10-04 (bundle clash, medido num 2.5.1 real).** A versão
-> anterior desta seção *movia* as camadas (CLEAR no canal de onde saía +
-> recarregar no destino). Isso tirava do ar o que estava no programa e zerava a
-> cena. Na prática, a produção pediu o contrário: **apertar "teste" não pode
-> resetar o ar.** O modelo abaixo é o que roda em produção.
+Regra: **ligar o modo teste não pode mexer no ar.** Não mova camadas entre
+canais (CLEAR no canal de onde sai + recarregar no destino): isso tira do ar o
+que estava no programa e zera a cena. Use o modelo abaixo.
 
 Um switch no dashboard (`DB_CASPAR_MODO = { teste: bool }`, declarado na
 **extension**, `persistent: false`, nasce em programa) decide **para qual canal
@@ -933,9 +913,9 @@ node scripts/caspar.js 'CLEAR 1-50'
 ```
 
 Host e porta vão como primeiro argumento (`192.168.0.20` ou `caspar:5250`). O
-servidor roda em qualquer Windows com GPU OpenGL 4.5, e como a saída deste
-projeto já É a janela `screen`, o ensaio no desktop é o mesmo caminho do ar —
-só muda o monitor.
+servidor roda em qualquer Windows com GPU OpenGL 4.5. Se a saída do programa é
+a janela `screen`, o ensaio no desktop é o mesmo caminho do ar; só muda o
+monitor.
 
 ### Com o MCP `casparcg` instalado, use-o primeiro
 
@@ -970,14 +950,14 @@ e não precisa: três caminhos, do mais exato ao mais literal.
 Os PNGs saem em arquivo e são lidos como imagem — é assim que se valida "o
 asset apareceu, no lugar certo, com o texto certo" sem ninguém olhar o monitor.
 
-Três coisas aprendidas fazendo:
+Armadilhas da captura:
 
-- 🚨 **Foto de tela fotografa a TELA.** A primeira versão do script usava
-  `CopyFromScreen` e trouxe o VS Code e um player de vídeo que estavam por cima
-  das janelas do Caspar — uma verificação que "passa" com a imagem errada. O
-  script usa `PrintWindow` com `PW_RENDERFULLCONTENT`, que pede o conteúdo à
-  própria janela e funciona com ela coberta. Mesmo assim: **olhe a imagem** e
-  confira o título que o script imprime.
+- **Não capture com `CopyFromScreen`.** Ele fotografa a tela, inclusive o que
+  estiver por cima das janelas do Caspar (editor, player), e a verificação
+  "passa" com a imagem errada. O script usa `PrintWindow` com
+  `PW_RENDERFULLCONTENT`, que pede o conteúdo à própria janela e funciona com
+  ela coberta. Mesmo assim, olhe a imagem e confira o título que o script
+  imprime.
 - **O Chromium de cada camada é um subprocesso também chamado `casparcg.exe`.**
   "O primeiro casparcg" é quase sempre um sem janela; o script usa o processo
   que tem título de janela.
@@ -1001,7 +981,7 @@ para ler o que a peça desenhou, `Page.captureScreenshot`, amostragem de
 `getComputedStyle` por rAF para provar que animou, `LayerTree` para o custo de
 render. Use uma porta diferente da do seu Chrome de teste.
 
-🚨 Desligue no programa: a porta de debug dá controle total de JS em toda
+**Desligue no programa:** a porta de debug dá controle total de JS em toda
 camada para quem alcançar a máquina.
 
 ### Pelo CasparCG Client
@@ -1036,10 +1016,10 @@ sem** "Send as JSON" — o padrão é XML, e é o que vai chegar se ninguém mex
 
 ## 12. O servidor, e a JANELA como saída principal
 
-Neste projeto o programa é **visto pela janela do Caspar** (consumer `screen`)
-num monitor — é o que vai para a tela, não um preview. NDI sai junto, como
-cópia com alfa para quem precisar. Isso tira o Caspar do papel de "gerador de
-key/fill" e o põe no de **saída final**, e muda seis coisas.
+Quando o programa é **visto pela janela do Caspar** (consumer `screen`) num
+monitor, essa janela é o que vai para a tela, não um preview. NDI sai junto,
+como cópia com alfa para quem precisar. O Caspar deixa de ser "gerador de
+key/fill" e vira **saída final**, e isso muda seis coisas.
 
 ### O que a janela é, e o que ela não é *(fonte: `screen_consumer.cpp`)*
 
@@ -1049,7 +1029,7 @@ key/fill" e o põe no de **saída final**, e muda seis coisas.
    `background` esquecido no `body`), use uma janela de conferência:
    `<sbs-key>true</sbs-key>` (fill e key lado a lado, janela com o dobro da
    largura) ou `<key-only>true</key-only>`. Na janela de programa, nunca.
-2. 🚨 **Fechar a janela MATA a saída.** O `X` da janela encerra o consumer
+2. 🚨 **Fechar a janela mata a saída.** O `X` da janela encerra o consumer
    (`Closed → is_running_ = false`); o canal continua rodando e o NDI continua
    saindo, mas **a janela não volta sozinha** — só com
    `ADD 1 SCREEN 1` pelo AMCP ou reiniciando o servidor. Na janela de programa:
@@ -1069,9 +1049,9 @@ key/fill" e o põe no de **saída final**, e muda seis coisas.
    brigar com o foco; **`borderless` + `x`/`y`/`width`/`height`** cobrindo o
    monitor é mais previsível. Na 2.4 esses quatro só existem no config; na 2.5
    também no `ADD … SCREEN`.
-5. **`interactive false` esconde o cursor.** Na 2.5.1 é só isso que ele faz — a
-   janela não repassa mouse nem teclado para o HTML. O cursor parado em cima do
-   LED no meio do programa é o clássico.
+5. **`interactive false` esconde o cursor.** Na 2.5.1 é só isso que ele faz (a
+   janela não repassa mouse nem teclado para o HTML). Sem ele, o cursor do
+   mouse pode ficar parado em cima da imagem no ar.
 6. **Capturar a janela com outro software (window capture do OBS/vMix) perde o
    alfa e soma latência.** Se o Caspar precisa entrar em outro software, é NDI.
 
@@ -1081,8 +1061,7 @@ frente de qualquer coisa que abra na máquina.
 
 ### O config de referência
 
-Montado sobre o do projeto anterior (dois canais: programa e LED, cada um com
-janela + NDI), com as correções que a análise dele pediu:
+Dois canais (programa e LED), cada um com janela + NDI:
 
 ```xml
 <configuration>
@@ -1091,14 +1070,14 @@ janela + NDI), com as correções que a análise dele pediu:
     <log-path>log/</log-path>
     <data-path>data/</data-path>
     <template-path>template/</template-path>
-    <!-- NÃO aponte o template-path para bundles/<b>/graphics. Visto no projeto
-         anterior: as peças abriam por file://, sem o NodeCG servindo — sem
-         replicant, sem manifesto. Gráfico do bundle entra por URL (§3). -->
+    <!-- Não aponte o template-path para bundles/<b>/graphics: as peças abrem
+         por file://, sem o NodeCG servindo (sem replicant, sem manifesto).
+         Gráfico do bundle entra por URL (§3). -->
   </paths>
   <channels>
     <!-- CANAL 1 — PROGRAMA. A janela no monitor 2 é a saída final. -->
     <channel>
-      <video-mode>1080p5994</video-mode>   <!-- UM video-mode por canal (o antigo repetia) -->
+      <video-mode>1080p5994</video-mode>   <!-- um video-mode por canal, sem repetir -->
       <consumers>
         <screen>
           <device>2</device>
@@ -1112,8 +1091,8 @@ janela + NDI), com as correções que a análise dele pediu:
         <ndi><name>GC</name></ndi>
         <system-audio />
 
-        <!-- DECKLINK — SEM PLACA INSTALADA HOJE. Deixe comentado; descomente
-             para testar SDI quando houver uma. Com o bloco ativo e SEM a placa,
+        <!-- DECKLINK. Sem placa instalada, deixe comentado; descomente
+             para testar SDI quando houver uma. Com o bloco ativo e sem a placa,
              o consumer falha ao iniciar e o erro vai para o log — não
              descomente "por garantia".
              · device = número da placa no console do Caspar no boot (1..).
@@ -1177,19 +1156,17 @@ janela + NDI), com as correções que a análise dele pediu:
   NodeCG estar no ar, e quem sabe disso é a reconciliação da extension.
 - Sem o **media-scanner** rodando, `CLS`/`TLS`/`CINF`/`THUMBNAIL` dão `501`. Ele
   lê o `casparcg.config` ao lado dele para achar as pastas.
-- 🚨 **O `casparcg_auto_restart.bat` da instalação 2.4.0 de referência não sobe
-  o scanner.** Ele só roda `scanner.exe` se existir `leveldown.node` na pasta —
-  e essa versão traz o binário em `prebuilds\win32-x64\node.napi.node`, não
-  `leveldown.node`. A pasta `_media\` (o banco do scanner) mostra que ele já
-  rodou, provavelmente aberto à mão. Suba o `scanner.exe` separado, ou corrija a
-  condição do `.bat`. *(lido nos arquivos; não executado)*
-- 🚨 **E o da 2.5.1 também não** — por outro motivo. O `.bat` novo roda
-  `scanner.exe`, mas o zip da release traz o scanner como
-  `casparcg-scanner-v1.4.0-win32-x64.exe`. Copie com o nome `scanner.exe` (foi o
-  que se fez na instalação deste projeto, e o `CLS` passou a responder).
-- **Monitor de 144 Hz** (os desta máquina): 144 ÷ 59,94 não é inteiro, e a
-  janela de programa trepida mesmo com `vsync`. No monitor da janela do ar,
-  ponha **60 Hz** nas configurações de vídeo do Windows.
+- **O `casparcg_auto_restart.bat` da 2.4.0 não sobe o scanner.** Ele só roda
+  `scanner.exe` se existir `leveldown.node` na pasta, e essa versão traz o
+  binário em `prebuilds\win32-x64\node.napi.node`. Suba o `scanner.exe`
+  separado, ou corrija a condição do `.bat`. *(lido nos arquivos; não
+  executado)*
+- **O da 2.5.1 também não**, por outro motivo: o `.bat` roda `scanner.exe`, mas
+  o zip da release traz o scanner como `casparcg-scanner-v1.4.0-win32-x64.exe`.
+  Copie com o nome `scanner.exe`. Verifique: o `CLS` passa a responder.
+- **Monitor de 144 Hz**: 144 ÷ 59,94 não é inteiro, e a janela de programa
+  trepida mesmo com `vsync`. No monitor da janela do ar, ponha **60 Hz** nas
+  configurações de vídeo do Windows.
 - O `.bat` reinicia o servidor quando ele sai com código 5 (`RESTART` pelo AMCP).
   Uma queda (crash) sai com outro código e **não** reinicia.
 - O caminho do `media-path` aceita `/` no Windows. Não use `\` cru.
@@ -1214,7 +1191,8 @@ janela + NDI), com as correções que a análise dele pediu:
 9. **`update`/`play` definidos depois de um `await` se perdem.** `utils/caspar.js`
    no `<head>`.
 10. **CasparCG Client manda XML por padrão**, com chaves `f0`, `f1`.
-11. **CG numa camada em transição → `403`.**
+11. **CG numa camada em transição** pode responder `202` sem efeito (o fonte
+    indica `403`). Espere a transição acabar (§9).
 12. **OSC na 6250 disputada com o CasparCG Client** → `OSC SUBSCRIBE` noutra porta.
 13. **`CLS` sem scanner → `501`**; nenhum painel pode depender dele para subir.
 14. **Wiki desatualizada**: `CG INFO`, `INFO TEMPLATE/SYSTEM/SERVER`, `HELP`,
@@ -1230,7 +1208,7 @@ janela + NDI), com as correções que a análise dele pediu:
     `borderless` na janela de programa (§12).
 19. **Janela não mostra alfa.** Conferir transparência pela janela de programa
     é impossível — janela de conferência com `sbs-key`.
-20. **`KILL` pode travar o desligamento** (medido na 2.5.1, com HTML e clipes
+20. **`KILL` pode travar o desligamento** (2.5.1, com HTML e clipes
     carregados): responde `202`, fecha a porta 5250, e o processo fica parado em
     `video_channel[1] Uninitializing` sem sair. Com o `.bat`, isso é uma saída
     que nunca acontece. `CLEAR` nos canais antes ajuda pouco; o que resolve é
@@ -1249,35 +1227,30 @@ janela + NDI), com as correções que a análise dele pediu:
     (`caspar_page_eval`, `caspar_page_sample`), filtre pela URL **com o canal**
     (`lt_x.html?caspar=2`). Só o nome do arquivo pega qualquer uma das duas.
 
-### O que os logs do projeto anterior mostraram
+### Sintomas no log do Caspar, e a causa
 
-A instalação de referência guarda os logs de três dias de programa (2024 e
-2025, ~1,3 milhão de linhas). Cada item abaixo apareceu lá, com contagem:
+O log do Caspar é o console das páginas. Procure por estes padrões:
 
-- **Um Chromium novo por disparo.** ~16 mil `PLAY … [HTML]` e ~12 mil `CLEAR`:
-  cada entrada de peça recarregava a página. Junto, ~2,3 mil avisos
-  `Assertion Failed: destroyer->size() < 8` — produtores sendo destruídos mais
-  rápido do que o servidor consegue fechar (fechar um Chromium é lento). É o
-  argumento de performance do modo A: camada permanente, ar no replicant.
-- **Páginas órfãs.** Dezenas de milhares de `Unhandled socket connection error:
-  xhr poll error` — camadas HTML que continuaram carregadas depois que o NodeCG
-  saiu do ar, tentando reconectar para sempre. E páginas de `?isPreview=1`
-  carregadas no canal 2: cada uma é um Chromium inteiro renderizando.
-  `INFO`/OSC no fim do ensaio diz o que ficou carregado; `CLEAR` no que não é
-  do programa.
-- **`update("")` quebrando template.** `REEL.html` estourou
-  `Unexpected end of JSON input` 73 vezes: `CG ADD` sem dado chama
-  `update("")`, e a peça fazia `JSON.parse` direto. É o item 6 do §9, visto no
-  ar. `utils/caspar.js` trata `""`.
-- **Template literal que não interpolou.** 260 comandos chegaram ao servidor
-  como `CG 1-… ADD 1 "…" 1 ${injectObj}` — aspas simples no lugar de crase no
-  código que montava o comando. O Caspar tratou `${injectObj}` como nome de
-  dataset e a peça entrou vazia, com `202`. Monte comando com `q()`/`dadosCG()`,
-  nunca concatenando à mão.
-- **Página que não sabia viver sem o dado.** `TypeError: Cannot read properties
-  of undefined/null` às centenas em `draft.html` e
-  `waitingScreen_players.html` — o replicant parcial do §6 do SKILL.md, agora
-  dentro do Caspar, onde ninguém vê o console. O log do Caspar é o console.
+- **Muitos `PLAY … [HTML]` + `CLEAR`, com `Assertion Failed: destroyer->size() < 8`.**
+  Cada entrada de peça está criando um Chromium novo, e os produtores são
+  destruídos mais rápido do que o servidor consegue fechar (fechar um Chromium
+  é lento). Use o modo A: camada permanente, ar no replicant.
+- **`Unhandled socket connection error: xhr poll error` em massa.** Páginas
+  órfãs: camadas HTML que continuaram carregadas depois que o NodeCG saiu do
+  ar, tentando reconectar para sempre. Páginas de preview (`?isPreview=1`)
+  esquecidas num canal também custam um Chromium inteiro cada. No fim do
+  ensaio, confira por `INFO`/OSC o que ficou carregado e dê `CLEAR` no que não
+  é do programa.
+- **`Unexpected end of JSON input` num template.** `CG ADD` sem dado chama
+  `update("")`, e a peça faz `JSON.parse` direto (§9). `utils/caspar.js` trata
+  `""`.
+- **Comando com `${…}` literal** (`CG 1-… ADD 1 "…" 1 ${injectObj}`). Aspas
+  simples no lugar de crase no código que monta o comando; o Caspar trata o
+  texto como nome de dataset e a peça entra vazia, com `202`. Monte comando
+  com `q()`/`dadosCG()`, nunca concatenando à mão.
+- **`TypeError: Cannot read properties of undefined/null`.** Página que não
+  sabe viver com o replicant parcial (§6 do SKILL.md). Dentro do Caspar
+  ninguém vê o console, então só o log mostra.
 - **Stinger em `1-9999`**, a camada padrão do CG (§2).
 
 ---
@@ -1297,8 +1270,10 @@ O bundle quase não muda — é isso que o modelo de estado compra:
 5. O delay de 100ms entre preview e stinger **sai** — no Caspar a transição vai
    no próprio PLAY.
 
-As duas pontes podem coexistir (`enabled` em cada uma) enquanto a produção
-decide; uma cena com as duas ligadas vai para os dois sistemas ao mesmo tempo,
+O checklist completo do port, com os pontos que costumam escapar, está no §16.
+
+As duas pontes podem coexistir (`enabled` em cada uma) durante a transição; uma
+cena com as duas ligadas vai para os dois sistemas ao mesmo tempo,
 então só uma fica `enabled` no dia do programa.
 
 Na direção contrária (bundle antigo feito para o Caspar com
@@ -1311,8 +1286,8 @@ Na direção contrária (bundle antigo feito para o Caspar com
 O caso: `fs_tabela.html` (a tabela, com dado vivo) por cima de
 `bg_tabela.mp4`/`.mov` (o fundo animado do motion). A tabela tem de entrar **num
 quadro certo do fundo** (quando a moldura do vídeo abriu) e sair **antes** de o
-fundo ir embora. Tudo abaixo foi montado e medido no servidor 2.5.1 real, com
-`PRINT` em cada fase.
+fundo ir embora. Os tempos citados abaixo são de um servidor 2.5.1, conferidos
+com `PRINT` em cada fase.
 
 ### A divisão de trabalho
 
@@ -1330,7 +1305,7 @@ de cair no quadro 40. Custa a memória de um Chromium por fullscreen desse tipo
 
 ### O fundo: um clipe com marcas, ou três clipes
 
-O motion entrega de um de dois jeitos, e os dois funcionam (medido):
+O motion entrega de um de dois jeitos, e os dois funcionam:
 
 **Um clipe com marcas** (`bg_tabela.mp4`: entrada 0–120, loop 120–240, saída
 240–360):
@@ -1341,7 +1316,7 @@ sair:   CALL 1-20 LOOP 0  +  CALL 1-20 SEEK 240  +  CALL 1-20 OUT 360  +  LOADBG
 ```
 
 `IN`/`OUT` com `LOOP` fazem o clipe tocar do 0 e ficar girando entre 120 e 240
-(medido: 2,0 s ↔ 4,0 s a 59,94). Na saída, o **`SEEK 240` é o que torna a
+(2,0 s ↔ 4,0 s a 59,94). Na saída, o **`SEEK 240` é o que torna a
 saída previsível**. Sem ele, o clipe só chega na saída quando termina a volta
 em que está: um atraso de 0 até um ciclo inteiro, dependendo de quando o
 operador apertou. Com ele, a saída começa já e dura sempre `fim − loopOut`
@@ -1355,12 +1330,12 @@ entrar: PLAY 1-20 fs/bg_tabela_in  +  LOADBG 1-20 fs/bg_tabela_loop LOOP AUTO
 sair:   PLAY 1-20 fs/bg_tabela_out  +  LOADBG 1-20 EMPTY AUTO
 ```
 
-O `AUTO` troca para o loop **no quadro em que a entrada acaba** (medido: 1,63 s,
+O `AUTO` troca para o loop **no quadro em que a entrada acaba** (1,63 s,
 exatamente os 98 quadros do clipe), e troca para vazio no fim da saída. É o
 servidor que encadeia, sem timer na extension. A saída também corta do ponto do
 loop; um `MIX 4` no `PLAY … out` esconde o corte.
 
-Com canal alfa, o fundo é `.mov` ProRes 4444 (medido: `yuva444p12le` toca com
+Com canal alfa, o fundo é `.mov` ProRes 4444 (`yuva444p12le` toca com
 alfa) ou `.webm` VP9. Um fundo de tela cheia, sem alfa, pode ser `.mp4` H.264
 — **na camada de vídeo do Caspar**. Dentro do HTML, não (ver compatibilidade).
 
@@ -1397,7 +1372,7 @@ async function entrarCena(nome) {
     nodecg.log.error(`[caspar] fundo da cena "${nome}" não entrou (${r.msg}) — a tabela fica fora`);
     return;
   }
-  // A resposta volta em ~ms: Date.now() aqui É o quadro 0 do fundo, para
+  // A resposta volta em ~ms: Date.now() aqui é o quadro 0 do fundo, para
   // efeito de animação. O prazo absorve o atraso do replicant até a página.
   const t0 = Date.now();
   DB_FS_AR.value = { cena: nome, htmlEntraEm: Math.round(t0 + (c.htmlEntra || 0) * QUADRO_MS), htmlSaiEm: null };
@@ -1468,7 +1443,7 @@ DB_FS_AR.on("change", (s) => {
 });
 ```
 
-Medido no servidor real, com a página na camada 2-31 e o fundo na 2-20:
+Comportamento esperado (página na camada 2-31, fundo na 2-20):
 
 | Fase | Resultado |
 |---|---|
@@ -1492,11 +1467,11 @@ saída é o vídeo **dentro** do HTML: veja a alternativa abaixo.
 Sincronia perfeita e uma camada só — mas:
 
 - **só `.webm` (VP9/VP8) ou AV1.** O Chromium do Caspar **não toca H.264**
-  (medido: `DEMUXER_ERROR_NO_SUPPORTED_STREAMS` com um `.mp4`), nem ProRes;
+  (`DEMUXER_ERROR_NO_SUPPORTED_STREAMS` com um `.mp4`), nem ProRes;
 - o vídeo é decodificado pelo Chromium, em software, e soma ao custo de render
   da página (`render-no-vmix.md` vale igual aqui);
-- o `.webm` com alfa do bundle tocou (1920×1080) com o `requestAnimationFrame`
-  a 59 fps — mas meça a peça real antes de adotar.
+- um `.webm` com alfa 1920×1080 toca com o `requestAnimationFrame` a 59 fps,
+  mas meça a peça real antes de adotar.
 
 Use quando a sincronia de quadro importa mais que o custo. Para "tabela sobre
 fundo animado", as duas camadas bastam.
@@ -1516,69 +1491,79 @@ fundo animado", as duas camadas bastam.
 
 ---
 
-## 16. Um port real: o bundle brawlstars (2026-09-28)
+## 16. Checklist de port vMix → Caspar
 
-O primeiro bundle portado com este documento. Serve de referência, porque tudo
-aqui rodou no Caspar 2.5.1 pelo dashboard de verdade (botões clicados, `PRINT`
-de cada cena). Código em `bundles/brawlstars/extension/caspar.js`, config em
-`cfg/brawlstars.json` → `caspar`.
+Os passos de troca de ponte estão no §14. Este checklist cobre o que costuma
+escapar num port e como conferir cada ponto.
 
-**Bandas decididas pela produção** (substituem o mapa de 10 em 10 do §2 neste
-projeto):
+**Mapa de camadas**
 
-| Banda | O quê |
-|---|---|
-| 1–100 | fundos de fullscreen: webm **sempre em LOOP** (10 = fundo, 20 = fundo extra) |
-| 1000+ | HTML do bundle, todo **permanente**: FS em 1000–1006 (opacidade 0 até a cena), draft em 1050, LT em 1100–1108 (opacos) |
-| 9999 | stinger (e é a camada padrão do CG — ninguém manda CG sem camada) |
+- [ ] Mapa decidido e escrito no `cfg` (§2). O de 10 em 10 serve; bandas largas
+      também, por exemplo: fundos de fullscreen em 1–100 (webm **sempre em
+      LOOP**, 10 = fundo, 20 = fundo extra), HTML do bundle todo **permanente**
+      em 1000+ (fullscreens com opacidade 0 até a cena, lower thirds opacos).
+- [ ] Stinger fora de 9999 (§2). Se tiver de ficar lá, nenhum cliente pode
+      mandar CG sem camada.
 
-**O comando de cena é calculado só do ALVO.** Todo PLAY de cena manda o lote
-inteiro: fundo da cena em LOOP (ou `EMPTY`), fundo extra (ou `EMPTY`), e
-`MIXER OPACITY` 1 no HTML da cena e 0 em **todos** os outros HTML de fullscreen
-— tudo com a mesma duração (`MIX 12` e opacidade em 12 quadros). Consequências
-medidas:
-- trocar de cena direto (Chave → Chave + pontos → Formato 1) é crossfade, sem
-  sobra da anterior;
-- o OUT funciona sem a extension saber o que está no Caspar (restart do NodeCG,
-  alguém mexeu pelo Client) — não existe "de onde vim" para errar.
+**Comando de cena calculado só do alvo**
 
-**Painéis: quase nada muda.** Todo PLAY/OUT de fullscreen já gravava `DB_FS`, e
-o lower third já era `visivel`. Só trocou a FONTE da lista de cenas: um
-`mapaCenas()` no `comum.js` lê `cfg.caspar.cenas` quando o Caspar está ligado e
-`cfg.vmix.inputs` quando não. Mais o bloco "Caspar" no Fullscreen (conexão e
-fundo lido do OSC) e a **tecla de modo teste no topo de todo painel** — toggle
-de um clique, sem confirmação, amarela quando ligada (§10).
+- [ ] Todo PLAY de cena manda o lote inteiro: fundo da cena em LOOP (ou
+      `EMPTY`), fundo extra (ou `EMPTY`), e `MIXER OPACITY` 1 no HTML da cena e
+      0 em **todos** os outros HTML de fullscreen, tudo com a mesma duração
+      (`MIX 12` e opacidade em 12 quadros).
+- [ ] Verificar: trocar de cena direto é crossfade, sem sobra da anterior; o OUT
+      funciona sem a extension saber o que está no Caspar (restart do NodeCG,
+      alguém mexeu pelo Client), porque não existe "de onde vim" para errar.
 
-**Custo medido** com os 15 gráficos permanentes, 2 canais 1080p59,94, 2 janelas
-e NDI, nada em cena e 2 lower thirds no ar (Ryzen de 16 threads + RTX 3070):
+**Painéis**
 
-| Processo | CPU | RAM |
-|---|---|---|
-| Caspar (mixer dos 2 canais + janelas + NDI) | ~1,3 núcleo | 2,8 GB |
-| 11 páginas paradas | 0% | ~100 MB cada |
-| 4 páginas com vídeo/animação rodando | ~65% somadas | ~200 MB cada |
-| total | ~2 núcleos | 5,2 GB |
+- [ ] Quase nada muda: PLAY/OUT de fullscreen já gravam `DB_FS`, e o lower
+      third já é `visivel`. Troque só a fonte da lista de cenas: um
+      `mapaCenas()` no `comum.js` que lê `cfg.caspar.cenas` com o Caspar ligado
+      e `cfg.vmix.inputs` sem ele.
+- [ ] Bloco "Caspar" no workspace de fullscreen (conexão e fundo lido do OSC) e
+      tecla de modo teste no topo de todo painel: um clique, sem confirmação,
+      amarela quando ligada (§10).
 
-Página parada é barata em CPU; o que custa é **vídeo tocando em página
-invisível**. Um fullscreen com webm interno (o `fs_vs` toca as placas em
-webm) segue decodificando com opacidade 0. A correção é a peça pausar o próprio
-vídeo quando `DB_FS.cena` não é a dela — a mesma regra "fora do ar, pause" do
-SKILL.md, com o ar lido do `DB_FS`.
+**Peças permanentes**
 
-**Duas peças que leem o MESMO ar não podem ficar carregadas juntas.** `draft.html` e `draft_escudos.html` são variantes (uma com ban global, outra com escudo) e as duas escutam `DB_DRAFT_AR`. No vMix só uma era input; no Caspar, com as duas permanentes, o PLAY do draft desenharia as duas barras uma sobre a outra. O cfg carrega UMA (`arProprio`), e trocar de variante é trocar o arquivo ali. Antes de pôr uma peça em `permanentes`, confira com `grep Replicant(` se outra já escuta o mesmo ar.
+- [ ] Duas peças que leem o **mesmo** replicant de ar não podem ficar
+      carregadas juntas. Variantes da mesma peça (que escutam o mesmo ar) eram
+      inputs alternativos no vMix; no Caspar, permanentes juntas, as duas
+      desenham uma sobre a outra. Carregue uma só no `cfg`; trocar de variante
+      é trocar o arquivo ali. Antes de pôr uma peça em `permanentes`, confira
+      com `grep Replicant(` se outra já escuta o mesmo ar.
+- [ ] Peça com vídeo interno pausa o próprio vídeo quando `DB_FS.cena` não é a
+      dela. Com opacidade 0 o webm continua decodificando e custando CPU (a
+      regra "fora do ar, pause" do SKILL.md, com o ar lido do `DB_FS`).
+- [ ] Custo de referência, para conferir se a máquina aguenta (15 páginas
+      permanentes, 2 canais 1080p59,94, 2 janelas + NDI, nada em cena e 2
+      lower thirds no ar; CPU de 16 threads + GPU classe RTX 3070):
 
-**Três coisas que o port pegou e o documento não previa:**
-- **Os cabeçalhos das peças mentiam sobre o fundo.** Diziam "o fundo é o
-  `bg.png`, still no vMix"; os commits posteriores já tinham trocado para webm
-  animado. Na dúvida entre cabeçalho e histórico, o `git log` da peça decide —
-  e o cabeçalho é atualizado no mesmo commit do port.
-- **Nome de clipe com espaço existe** (`FS_VS BG`). O código põe aspas em todo
-  nome de clipe (`q()`); não conte com o motion entregar sem espaço.
-- **Fundos a 24 fps num canal 59,94.** O Caspar converte a cadência; o
-  movimento do fundo fica com o passo do 24. Se incomodar, o motion exporta a
-  59,94.
+      | Processo | CPU | RAM |
+      |---|---|---|
+      | Caspar (mixer dos 2 canais + janelas + NDI) | ~1,3 núcleo | 2,8 GB |
+      | 11 páginas paradas | 0% | ~100 MB cada |
+      | 4 páginas com vídeo/animação rodando | ~65% somadas | ~200 MB cada |
+      | total | ~2 núcleos | 5,2 GB |
 
-**Verificação de dashboard por Playwright:** o MCP grava tudo em
-`bundles/.playwright-mcp` e só aceita caminho de arquivo dentro de `bundles/`.
-Pasta sem `package.json` em `bundles/` derruba o NodeCG no boot seguinte — mova
-o que precisar para o scratchpad e **apague a pasta** antes de encerrar.
+      Página parada é barata em CPU; o que custa é vídeo tocando em página
+      invisível.
+
+**Mídia**
+
+- [ ] Fundo real de cada peça confirmado pelo `git log` da peça, não pelo
+      cabeçalho (o cabeçalho pode estar desatualizado, ex.: "still PNG" quando
+      já é webm animado). Atualize o cabeçalho no mesmo commit do port.
+- [ ] Nome de clipe com espaço (`FS_VS BG`) existe: ponha o nome entre aspas
+      com `q()` (§4, §5).
+- [ ] Fundo a 24 fps num canal 59,94: o Caspar converte a cadência e o
+      movimento fica com o passo do 24. Se incomodar, peça ao motion exportar a
+      59,94.
+
+**Verificação do dashboard por Playwright**
+
+- [ ] O MCP do Playwright grava em `bundles/.playwright-mcp` e só aceita caminho
+      de arquivo dentro de `bundles/`. Pasta sem `package.json` em `bundles/`
+      derruba o NodeCG no boot seguinte: mova o que precisar para fora e
+      **apague a pasta** antes de encerrar.

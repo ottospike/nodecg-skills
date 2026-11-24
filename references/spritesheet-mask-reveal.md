@@ -8,6 +8,7 @@
 >
 > Subskill de `nodecg`. Para animação comum de entrada/saída, o caminho é
 > `animacao-gsap.md` — este aqui é só para o matte orgânico.
+
 The reliable way to play a designer's organic reveal matte over HTML content.
 Only the **mask** carries the texture; the content (video/text/logos) stays
 pixel-crisp. Beats CSS-generated attempts:
@@ -198,7 +199,7 @@ A paint matte has TWO axes and they rotate together:
 For the typical top-down paint matte: **non-rotated** = *vertical streaks + horizontal
 sweep*; **90°-rotated** (`INOUT_lite`) = *horizontal streaks + vertical sweep*.
 So a request like "make it horizontal" is ambiguous — confirm whether they mean
-horizontal **streaks** or horizontal **sweep**. You canNOT get horizontal streaks
+horizontal **streaks** or horizontal **sweep**. You cannot get horizontal streaks
 AND horizontal sweep from one matte (rotating swaps both at once). Verify a cell
 with `ffmpeg -i INOUT.png -vf "crop=CW:CH:$((13*CW)):0,alphaextract,scale=..." f.png`
 and look before assigning a variant.

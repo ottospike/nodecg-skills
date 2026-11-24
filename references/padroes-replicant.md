@@ -1,6 +1,6 @@
 # Padrões de replicant recorrentes
 
-Catálogo dos padrões de estado já resolvidos em bundles reais. Antes de inventar um jeito novo de
+Catálogo de padrões de estado recorrentes. Antes de inventar um jeito novo de
 guardar estado, veja se o caso é um destes.
 
 ## 1. Liga/desliga simples
@@ -91,8 +91,8 @@ montarValor({ replicant: "DB_VALOR_CHAT", air: "chatAir",  campo: "chatCampo",  
 ```
 
 No lado do gráfico o equivalente é uma tabela de configuração (`BLOCOS`) e uma
-função que a percorre — foi o que substituiu três arquivos quase idênticos
-(`valor`, `valorV2`, `valorChat`) por um.
+função que a percorre: três arquivos quase idênticos (ex.: `valor`, `valorV2`,
+`valorChat`) viram um.
 
 ## 4. Relógio: guarde o prazo, não o tique
 
@@ -111,7 +111,7 @@ function restanteMs(t, agora) {
 }
 ```
 
-Ninguém escreve no replicant a cada segundo. O painel repinta num
+Não escreva no replicant a cada segundo. O painel repinta num
 `setInterval(250)`, o gráfico anda em `requestAnimationFrame`. Fechar o painel não
 para o relógio, e um refresh da browser source reentra no segundo certo.
 
@@ -168,8 +168,8 @@ participante no bloco de valor vem do `DB_QUIZ`, que já sabe de quem é a pergu
 no ar. É isso que impede o nome de um com o valor de outro. Não redigite o que
 outro replicant já sabe.
 
-Isso vale para o painel também: um painel de confronto oferece "Puxar do Ingame
-Setup" em vez de pedir os dois times de novo. E quando ele guarda a referência,
+Isso vale para o painel também: um painel de confronto oferece "Puxar do setup
+da partida" em vez de pedir os dois times de novo. E quando ele guarda a referência,
 guarda a **chave** (sigla, id), nunca o rótulo: o rótulo é corrigível no cadastro, e
 uma cópia congelada dele vira órfã na primeira correção.
 
@@ -184,8 +184,8 @@ DELETE FROM replicant WHERE namespace='<bundle>' AND name='DB_X';
 ```
 
 ⚠️ **Pare o NodeCG antes.** Com o servidor no ar ele tem o replicant em memória e
-regrava a forma antiga no shutdown — você apaga, reinicia, e o valor velho está lá de
-novo. Já custou um ciclo inteiro de debug em cima de nada.
+regrava a forma antiga no shutdown: você apaga, reinicia, e o valor velho está lá de
+novo.
 
 Ordem: parar → `DELETE` → subir.
 
@@ -196,7 +196,7 @@ animação anda, o texto cabe, o SETAR de fato gravou — só um browser respond
 Chromium headless dirigido por CDP (`chrome-headless-shell --remote-debugging-port`,
 `Page.navigate` + `Runtime.evaluate` + `Page.captureScreenshot`) fecha o ciclo.
 
-Duas pegadinhas que custam meia hora cada:
+Duas armadilhas:
 
 - **Painel servido pela URL normal NÃO recebe o objeto `nodecg`.** Quem injeta a API
   é o dashboard, no iframe. Sozinho, o script do painel morre no
@@ -208,9 +208,9 @@ Duas pegadinhas que custam meia hora cada:
   mensagem de erro não diz por quê. Só `function` de topo e `var` aparecem em
   `window`.
 
-Prove o caminho INTEIRO, não a metade que você suspeita: com o painel e o gráfico
-ambos verificados, o bug que sobra está no terceiro lugar — e foi assim que um
-"Setar não retira o time" virou um `tocado` que o botão Limpar não marcava.
+Prove o caminho inteiro, não a metade que você suspeita: com o painel e o gráfico
+ambos verificados, o bug que sobra está no terceiro lugar (ex.: uma flag de estado
+que um botão do painel não marca).
 
 Duas coisas que o mesmo CDP responde e que não são caminho de dado:
 

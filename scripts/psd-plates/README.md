@@ -1,7 +1,7 @@
 # scripts/psd — extração de plates de PSDs (Photopea + psd-tools)
 
-Ferramenta de PREPARO (não roda no ar). O porquê de cada passo está em `references/psd-to-html/photopea-mcp.md`
-(seção "Plates em lote com psd-tools"); resumo:
+Ferramenta de preparo (não roda no ar). O porquê de cada passo está em `references/psd-to-html/photopea-mcp.md`
+(seção "Batch plates with psd-tools"); resumo:
 
 - `textspec.py <psd>` — tipografia real de cada camada de texto (corpo = FontSize × escala,
   baseline, alinhamento, tracking, caixa, efeitos ativos como Stroke).

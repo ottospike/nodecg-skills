@@ -5,9 +5,9 @@ broadcast overlay wants. Don't fight it with flexbox — the design was laid out
 1920×1080, so reproduce that and scale the whole stage if a different output size is needed.
 
 **This holds for a lower third too.** A 421×106 bar in the bottom-left corner still lives on
-a full 1920×1080 stage at `left:157px; top:805px` — never build the graphic at the size of the
-bar. The browser source is always full-frame, canvas coordinates are what land the piece where
-the designer drew it, and two pieces have to coexist in the frame without recomputing anything.
+a full 1920×1080 stage at `left:157px; top:805px`; never build the graphic at the size of the
+bar. The browser source is always full-frame, canvas coordinates land the piece where the
+designer drew it, and two pieces have to coexist in the frame without recomputing anything.
 
 ## Stage and positioning
 
@@ -51,14 +51,11 @@ glyph bounds and don't include the leading the design implies:
 
 ### …but NOT on a field that auto-fits
 
-`align-items: center` is only safe while the type size is fixed. The moment the field
-auto-fits, the recipe above becomes a bug: the box keeps its fixed height, the line box
-shrinks with the font, and flex re-centres it — so **the baseline drifts down as the text
-gets longer**. The error is not a constant you can offset away.
-
-Measured on a real lower third: the name sat 2.26px low at full size (baseline 978.70 vs
-the manifest's 976.44), and 8.9px low at the auto-fit floor. Nobody notices on a short
-name, and it looks broken on a long one.
+`align-items: center` is only safe while the type size is fixed. When the field auto-fits,
+the box keeps its fixed height, the line box shrinks with the font, and flex re-centres it,
+so **the baseline drifts down as the text gets longer**. The error is not a constant you can
+offset away. Order of magnitude: 2.26px low at full size (baseline 978.70 vs the manifest's
+976.44), 8.9px low at the auto-fit floor.
 
 The PSD anchors point text by its **baseline** — the box in the manifest is derived from
 it, not the other way round. So anchor by the baseline too:
@@ -77,10 +74,10 @@ el.style.top = MEDIDA.topoParaBaseline(BASELINE_LOCAL, r.tam, familia, peso, 1) 
 `BASELINE_LOCAL` is the manifest's `baselineCanvas.y` minus the top of whatever the field
 is positioned against — not minus the stage.
 
-Two things that cost real debugging here:
+Two traps:
 
 - **Declare `align-items` once.** Adding `flex-start` at the top of a rule that already
-  says `center` further down does nothing — last declaration wins, and the computed style
+  says `center` further down does nothing: last declaration wins, and the computed style
   still reads `center`. Check `getComputedStyle(el).alignItems`, don't assume the edit took.
 - **`getBoundingClientRect()` on a Range gives the LINE BOX, not the ink.** Comparing it
   against a PSD's glyph bounds compares two different things (52px vs 34px on the same
@@ -224,4 +221,4 @@ is invisible in isolation is obvious the moment the reference is on top:
      pointer-events:none; background:url(../L3_Pergunta.png) no-repeat; background-size:100% 100%;"></div>
 ```
 
-Delete it before shipping — a leftover reference overlay on air is a memorable mistake.
+Delete it before the graphic goes on air.

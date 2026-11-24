@@ -127,11 +127,11 @@ E o principal: **converta o canal para replicant** em vez de manter
 branco depois de um refresh — ver §1 do SKILL.md. Se não der pra converter agora,
 registre por quê no cabeçalho do arquivo.
 
-Duas coisas que morderam nessa migração:
+Duas armadilhas da migração:
 
 - **Reset de estado tem que ser síncrono.** Um `clearGFX` que zera flags dentro de um
-  `setTimeout` roda *depois* do handler de play que ligou a flag de no-ar. Foi uma
-  corrida real.
+  `setTimeout` roda *depois* do handler de play que ligou a flag de no-ar e a
+  desliga. Zere as flags de forma síncrona.
 - **Auditoria de canais.** Num bundle grande, cruze `sendMessage` × `listenFor` entre
   dashboard, graphics e extension: aparecem botões órfãos, listeners duplicados e
-  canais que ninguém escuta.
+  canais sem ouvinte.

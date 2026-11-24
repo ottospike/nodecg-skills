@@ -55,21 +55,20 @@ borda e o alvo de clique fica pequeno pra quem opera com o programa no ar.
 | Classe | Uso |
 |---|---|
 | `.bt` | base |
-| `.bt-play` | põe no ar / confirma — leva a **cor de ação primária da arte** (verde num projeto neutro, amarelo num Brawl Stars) |
+| `.bt-play` | põe no ar / confirma — leva a **cor de ação primária da arte** (ex.: verde numa arte neutra, amarelo numa arte que usa amarelo como primária) |
 | `.bt-out` | vermelho — tira do ar |
 | `.bt-setar` | não estica: fica do tamanho da palavra, ao lado do campo |
 | `.bt-cena` + `.on` | cena de fullscreen; `.on` = a que foi acionada |
 | `.bt-mark` + `.on` | marcação toggle (alternativa escolhida) |
 | `.bt-reveal` | revelar resposta |
-
-**PLAY leva a cor primária da arte, e SETAR não pode levar a mesma.** Pôr no ar é
-a ação primária do dashboard, então é PLAY que merece o tratamento cheio (bisel,
-cor de marca) — é o botão que o operador procura com o olho. Se SETAR usar a
-mesma cor, os dois disputam o mesmo olhar e o operador aperta SETAR achando que
-está pondo no ar. SETAR fica neutro com um fio da cor primária: legível como
-ação, sem competir.
 | `.bt-avancar` / `.bt-voltar` | verde subiu / vermelho desfez — mesma linguagem do PLAY/OUT |
 | `.bt-ovo` / `.bt-explic` + `.on` | grade de peças irmãs; a acesa é a que está no ar |
+
+**PLAY leva a cor primária da arte, e SETAR não pode levar a mesma.** Pôr no ar é
+a ação primária do dashboard, então PLAY recebe o tratamento cheio (bisel, cor de
+marca): é o botão que o operador procura com o olho. Se SETAR usar a mesma cor,
+os dois disputam o olhar e o operador aperta SETAR achando que está pondo no ar.
+SETAR fica neutro com um fio da cor primária: legível como ação, sem competir.
 
 ## Componentes maiores
 
@@ -83,7 +82,7 @@ ação, sem competir.
 | `.tempo` / `.relogio[data-modo]` / `.tempo-bts` | relógio grande à esquerda, grade 3×2 de controles à direita |
 | `.cenas` | linha de botões de cena do switcher |
 
-## Regras de layout que já custaram debug
+## Regras de layout
 
 - **Grade, não linhas independentes.** Cinco controles numa `grid` de 3 colunas
   alinham nas bordas; um `.campo` empilhado sobre uma `.barra` se dimensiona
@@ -106,7 +105,7 @@ ação, sem competir.
 
 `--muted` é calibrado contra UMA superfície. Aninhe uma caixa translúcida
 (`rgba(255,255,255,.04)`) sobre um fundo claro e o mesmo token cai para **1,02:1** —
-ilegível, e ninguém percebe até o operador reclamar de "baixa visibilidade".
+ilegível, e o defeito só aparece quando o operador reclama de "baixa visibilidade".
 
 A correção não é clarear o token (isso estraga onde ele estava certo): é dar à caixa
 interna um fundo **opaco conhecido**, uma classe `.caixa` com a mesma cor de placa
@@ -143,7 +142,7 @@ Escolha um dos dois e escreva qual, com o porquê, no CSS. Se ficar com content-
 
 ⚠️ **`scrollWidth` não acusa truncamento em `<select>`** como acusa num `<input>`.
 Uma verificação automatizada dirá "nada cortado" enquanto a tela mostra
-`RED CANIDS KA`. Mostre a forma curta no rótulo da `<option>` e o nome inteiro no
+o nome cortado (ex.: `NOME COMPRIDO DO T`). Mostre a forma curta no rótulo da `<option>` e o nome inteiro no
 `title`; o `value` continua sendo a chave.
 
 ## O painel mostra o número VIVO, não o que foi configurado
