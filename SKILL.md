@@ -40,13 +40,14 @@ está em documentos que você **carrega sob demanda** — não leia tudo de uma 
 | Decidindo como guardar um estado novo | `references/padroes-replicant.md` |
 | **Precisa PROVAR que funciona** (desenha? anima? cabe? gravou?) | `references/padroes-replicant.md` §10, verificação por CDP |
 | Falando com o vMix, ou portando bundle antigo do modelo CasparCG | `references/vmix.md` |
-| **O playout é CasparCG** — camadas, AMCP, cena de fullscreen com `MIX`/`STING`, clipe/vinheta, fonte SDI/NDI, gráfico do bundle numa camada `[HTML]`, template CG (`play/stop/update`), selo NO AR pelo OSC, testar direto no servidor, **saída pela janela `screen`** (a saída principal deste projeto), `casparcg.config` de referência, modo teste (canal 2), **HTML ligado a fundo em vídeo** (tabela sobre `bg.mp4`, entrada/saída por prazo), compatibilidade do Chromium do Caspar (GSAP ok, H.264 em `<video>` não) | `references/casparcg.md` (+ `assets/caspar-*.js`, `assets/utils-caspar.js`, `scripts/caspar.js`) |
+| **O playout é CasparCG** — camadas, AMCP, cena de fullscreen com `MIX`/`STING`, clipe/vinheta, fonte SDI/NDI, gráfico do bundle numa camada `[HTML]`, template CG (`play/stop/update`), selo NO AR pelo OSC, testar direto no servidor, **saída pela janela `screen`** (a saída principal deste projeto), `casparcg.config` de referência, **modo teste = preview no canal 2 que não toca no ar** (gráficos nos dois canais, página congelada por `canal.js`, ensaio descartado na volta), **reconciliação sem piscar** (lê o OSC antes de recarregar), **HTML ligado a fundo em vídeo** (tabela sobre `bg.mp4`, entrada/saída por prazo), compatibilidade do Chromium do Caspar (GSAP ok, H.264 em `<video>` não) | `references/casparcg.md` (+ `assets/caspar-*.js`, `assets/utils-caspar.js`, `assets/canal.js`, `scripts/caspar.js`) |
 | **Pondo a instalação no ar** (Docker, Coolify, domínio, volumes) | `references/deploy.md` |
 | **O trabalho começa no Google Drive** — quais gráficos o projeto pede, baixar os PSDs, montar a estrutura de pastas | `references/drive-to-graphics.md` |
 | **"Isso é um lower third ou um in-game?"** — vocabulário dos tipos de peça, área de interesse, como se decide o corte das plates | `references/psd-to-html/tipos-de-peca.md` |
 | **A arte vem de um `.psd`/`.psb`** | `references/psd-to-html/README.md` (+ os docs ao lado e `scripts/*.jsx`) |
 | **A arte veio só como PNG achatado** ou como frame de transmissão, sem camadas — inclusive vários frames da mesma peça | `references/psd-to-html/png-analysis.md` (+ `scripts/analyze_png.py`) |
 | **A transição é matte de vídeo** (tinta, pincel, dissolve) | `references/spritesheet-mask-reveal.md` |
+| **A Motion mandou a peça como UM webm com entrada, hold e saída** e o texto tem que acompanhar a arte | `references/motion-in-hold-out.md` (+ `assets/motion/`, `scripts/motion-aplicar.mjs`) |
 
 O do Drive e os dois últimos são subskills completas: têm seu próprio fluxo, e você
 segue o documento inteiro em vez de só consultar. Entre neles pela primeira linha, que diz

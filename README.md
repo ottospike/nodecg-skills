@@ -39,7 +39,7 @@ O ponto de partida é [`SKILL.md`](SKILL.md). O resto carrega sob demanda:
 O repo é seu próprio marketplace de plugin do Claude Code:
 
 ```bash
-claude plugin marketplace add tavinho3c/nodecg-skills
+claude plugin marketplace add ottospike/nodecg-skills
 ```
 
 ```bash
@@ -52,13 +52,12 @@ registrado no `.claude/settings.json` dele.
 
 Para atualizar depois de um push: `claude plugin update nodecg`, e reinicie a sessão.
 
-O repo é privado, então quem for instalar precisa de acesso a ele.
 
 <details>
 <summary>Sem plugin, por clone manual</summary>
 
 ```bash
-git clone git@github.com:tavinho3c/nodecg-skills.git ~/.claude/skills/nodecg
+git clone git@github.com:ottospike/nodecg-skills.git ~/.claude/skills/nodecg
 ```
 
 Funciona, mas não tem update, versão nem escopo de projeto. E não misture as duas

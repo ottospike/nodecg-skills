@@ -341,9 +341,55 @@ lista de "o que estava no ar" precisa existir.
 NodeCG reinicia no meio do programa com o Caspar no ar, as camadas permanentes
 são recarregadas (um reload de Chromium) — com a trava de primeiro estado (§6
 do SKILL.md), uma barra que estava no ar volta no ar sem re-animar, então no ar
-isso é imperceptível *desde que a trava exista*. Se preferir não tocar no que já
-está carregado, consulte `INFO <canal>` antes e pule as camadas cujo produtor já
-é `html` com a URL certa — ou leia isso do OSC (§7).
+isso é imperceptível *desde que a trava exista*. Para não tocar no que já está carregado, use a versão abaixo.
+
+### Reconciliar SEM PISCAR: pergunte ao Caspar antes de mandar qualquer coisa
+
+> Medido no bundle clash (2026-11-12). A produção pediu: "restart do NodeCG não
+> pode derrubar nem piscar a arte". O `conectou` acima recarrega tudo, e cada
+> reload de Chromium pisca. A versão de produção **lê o OSC primeiro** (§7) e
+> só carrega o que falta.
+
+- **Página permanente já carregada** (camada com produtor `html` e a URL dela):
+  **não recarrega**. Ela reconecta sozinha ao NodeCG, recebe o mesmo estado (os
+  replicants de ar persistem), e nada muda na tela.
+- **Fundo da cena do `DB_FS` já tocando** (produtor `ffmpeg` com o clipe certo):
+  a ponte **reassume** a cena (`cenaNoAr[canal] = cena`) sem comando nenhum. Um
+  PLAY recomeçaria o loop.
+- **Caspar não bate com o `DB_FS`**: realinha com `pedirCena(cena, { semSting: true })`.
+  É reconciliação, não ordem do operador, então vai sem sting.
+- **Caspar LIMPO** (nenhuma permanente no programa): é o caso do bloco acima.
+  Carrega tudo e zera o fullscreen. Se for a **primeira conexão deste boot do
+  NodeCG** (a máquina reiniciou), zera também todo `visivel` antes de carregar:
+  o estado gravado é de antes da queda, e nada pode entrar no ar sozinho.
+- **Sem OSC em 3 s**: não dá para saber o que está lá, então recarrega tudo.
+  O OSC só começa a chegar **depois** do AMCP conectar. Quando chegar, espere
+  mais ~800 ms para o resumo do OSC estabilizar, porque uma camada só aparece
+  depois de vista por um tempo.
+- Com modo teste (§10), faça isso **para cada canal** (`[CANAL, CANAL_TESTE]`)
+  e mande o canal que não está vivo recomeçar sem cena. Ele alcança o estado
+  quando virar o vivo.
+
+```js
+const temHtml = (camadas, canal, camada, arquivo) => {
+  const c = camadas[`${canal}-${camada}`];
+  return !!c && c.produtor === "html" && String(c.arquivo || "").includes(arquivo);
+};
+caspar.on("conectou", async () => {
+  const boot = primeiraConexao; primeiraConexao = false;
+  const camadas = await lerCaspar();                 // null se o OSC não vier em 3s
+  const faltando = (canal) => PERMANENTES.filter((p) => !camadas || !temHtml(camadas, canal, p.camada, p.arquivo));
+  const limpo = faltando(CANAL).length === PERMANENTES.length;
+  if (limpo && boot) zerarVisiveis();
+  for (const canal of CANAIS) { const f = faltando(canal); if (f.length) await caspar.lote(cmdsPermanentes(canal, f)); }
+  // depois: reassumir a cena se o fundo bate, realinhar se não bate, zerar se limpo
+});
+```
+
+`cmdsPermanentes` manda `MIXER <c-l> OPACITY 0` **antes** do `PLAY [HTML]` das
+peças de fullscreen. A transformação é da camada e sobrevive à troca de
+produtor, então o HTML já nasce invisível e a cena o revela com o fundo.
+
 
 ### Comandos avulsos que a extension costuma precisar
 
@@ -742,90 +788,131 @@ A gramática é a do SKILL.md §8, sem exceção. O que o Caspar acrescenta:
   `CLEAR 1` digitado errado derruba o programa; comando livre é o
   `scripts/caspar.js`, no terminal de quem sabe o que está fazendo.
 
-### Modo teste: os gráficos vão para a janela 2
+### Modo teste: PREVIEW no canal 2, sem tocar no ar
 
-Um toggle no dashboard que manda **todos os gráficos do bundle para o canal de
-teste** — um canal que só tem janela no monitor do operador —, em vez do canal
-de programa (a janela do ar, e a Decklink/NDI quando houver). Com ele ligado, o
-operador ensaia PLAY/OUT, cenas e vinhetas com o programa rodando, e nada sai.
+> **Revisto em 2026-10-04 (bundle clash, medido num 2.5.1 real).** A versão
+> anterior desta seção *movia* as camadas (CLEAR no canal de onde saía +
+> recarregar no destino). Isso tirava do ar o que estava no programa e zerava a
+> cena. Na prática, a produção pediu o contrário: **apertar "teste" não pode
+> resetar o ar.** O modelo abaixo é o que roda em produção.
 
-É estado, como todo o resto: `DB_CASPAR_MODO = { teste: bool }`, declarado na
-**extension**, e o `canalAlvo()` do §5 lê dele a cada comando. A troca **move**
-as camadas do bundle de um canal para o outro:
+Um switch no dashboard (`DB_CASPAR_MODO = { teste: bool }`, declarado na
+**extension**, `persistent: false`, nasce em programa) decide **para qual canal
+os comandos vão**. Canal 1 = programa, canal 2 = teste (só janela no monitor do
+operador; nunca Decklink, nem NDI que alguém receba).
+
+**As cinco regras do modelo:**
+
+1. **Todos os gráficos ficam carregados nos DOIS canais o tempo todo.** A
+   reconciliação (§5) carrega as permanentes em ch1 e ch2, cada página com
+   `?caspar=<canal>` na URL.
+2. **A troca não manda CLEAR, PLAY nem OUT para o canal que sai.** Ele congela
+   exatamente como estava: o FS que está no ar continua no ar enquanto se ensaia.
+3. **O estado é um só.** Os replicants `DB_*` são os mesmos para os dois
+   canais, então o painel nunca perde o que está ativo.
+4. **Congelamento por página** (`assets/canal.js`). Cada página do Caspar só
+   repassa `change` de replicant quando o canal dela é o
+   `DB_CASPAR.canalVivo`. Fora disso, guarda o último valor (pendente). Sem
+   isso, ensaiar um LT no ch2 acenderia a mesma barra no ch1, porque o
+   replicant é um só.
+5. **Voltar ao programa DESCARTA o ensaio.** O ar não recebe um comando sequer.
+
+**A sequência da troca** (na extension):
+
+- **Entrar em teste:** tira um **retrato do programa** (cena do `DB_FS` +
+  `visivel` de cada replicant de LT) e publica em `DB_CASPAR.pgm`. O painel
+  mostra o retrato numa faixa amarela ("NO AR no PGM: FS x, LT y…"). Depois
+  publica `canalVivo = 2`, o ch2 solta o que tinha pendente (passa a espelhar o
+  ar) e recebe a cena atual **sem sting**.
+- **Voltar:** publica `canalVivo = null` e **todas** as páginas congelam. Devolve
+  o retrato aos replicants: `visivel` de cada LT e a cena do `DB_FS`. A cena vai
+  com um flag `restaurandoFs` para o handler do `DB_FS` **não** reaplicar, porque
+  o PLAY do fundo recomeçaria o loop no ar. Por fim publica `canalVivo = 1` com
+  `descartar: true`, e o ch1 joga fora o que ficou pendente. Entre os passos,
+  espere ~150 ms para cada publicação chegar às páginas.
 
 ```js
-/* As camadas que são do bundle. Só elas mudam de canal: a fonte de programa
-   (camada 10, a câmera) e qualquer coisa que outro sistema pôs no canal ficam
-   onde estão. Nunca `CLEAR <canal>` inteiro aqui. */
-const camadasDoBundle = () => [
-  ...Object.keys(CC.permanentes || {}).filter((k) => /^\d+$/.test(k)).map(Number),
-  CAM.fsFundo, CAM.fsHtml, CAM.vinheta,
-].filter((n) => Number.isFinite(n));
+/* DB_CASPAR.canalVivo: null enquanto troca (todas congeladas). */
+const publicar = (campos) => {
+  DB_CASPAR.value = Object.assign({}, DB_CASPAR.value, campos, {
+    canal: canalAlvo(), teste: emTeste(), canalVivo: trocando ? null : canalAlvo(),
+  });
+};
 
 DB_CASPAR_MODO.on("change", async (novo, velho) => {
-  if (!velho) return;                                  // primeira emissão: não é ordem
-  if (!!(novo && novo.teste) === !!velho.teste) return;
-  const de   = velho.teste ? CC.canalTeste : CANAL;
-  const para = novo.teste  ? CC.canalTeste : CANAL;
-  if (!CC.canalTeste) { nodecg.log.error("[caspar] modo teste sem cfg.caspar.canalTeste"); return; }
-
-  // 1. Esvazia as camadas do bundle no canal de onde saiu. Se era o programa,
-  //    é aqui que os gráficos saem do ar.
-  await caspar.lote(camadasDoBundle().map((cam) => `CLEAR ${de}-${cam}`));
-  // 2. Fullscreen pedido não migra: a cena é decisão de ar, não de canal.
-  if (DB_FS.value && DB_FS.value.cena) DB_FS.value = { cena: null };
-  // 3. Monta as permanentes no destino — a MESMA função da reconciliação, com
-  //    o canal novo. As peças relêem o replicant e voltam no estado de cada uma.
-  await carregarPermanentes(para);
-  nodecg.log.warn(`[caspar] MODO TESTE ${novo.teste ? "LIGADO — gráficos no canal " + para : "DESLIGADO — gráficos de volta ao programa"}`);
+  if (!velho || !!(novo && novo.teste) === !!velho.teste || !CANAL_TESTE) return;
+  if (emTeste()) {
+    const cena = (DB_FS.value && DB_FS.value.cena) || null;
+    retratoPgm = { cena, lt: REPS_AR.map((r) => !!(r.rep.value && r.rep.value.visivel)) };
+    publicar({ descartar: false, pgm: { cena, ar: /* rótulos dos LT no ar */ [] } });
+    if ((cenaNoAr[CANAL_TESTE] || null) !== cena) await pedirCena(cena, { canal: CANAL_TESTE, semSting: true });
+  } else {
+    trocando = true; publicar({}); await esperar(150);
+    REPS_AR.forEach((r, i) => { /* devolve visivel do retrato, só se diferente */ });
+    if (cenaAtual !== retratoPgm.cena) { restaurandoFs = retratoPgm.cena; DB_FS.value = { ...DB_FS.value, cena: retratoPgm.cena }; }
+    await esperar(150);
+    trocando = false; retratoPgm = null;
+    publicar({ descartar: true, pgm: null });
+  }
 });
 ```
 
-(`carregarPermanentes(canal)` é o passo 1 do `conectou` do §5, extraído para
-receber o canal. A reconciliação chama com `canalAlvo()`.)
+Estado que passa a ser **por canal** na extension: `cenaNoAr[canal]`,
+`stingDesde[canal]`, e `pedirCena(nome, { canal })` fixa o canal **na hora do
+pedido**. Um `await` no meio não pode mudar o destino de uma cena já pedida.
 
-Por que é assim, e não de outro jeito:
+**A página** carrega `<script src="utils/canal.js">` **antes de qualquer script
+que chame `nodecg.Replicant`** (antes de `medida.js` etc.). Ele embrulha
+`nodecg.Replicant` e o `.on("change")`. Fora do Caspar (sem `?caspar=`, no
+navegador, no vMix, no `?dev=1`) não faz nada. Com `?livre=1` também não: use
+isso para um canal que não tem teste nem programa (ex.: um canal dedicado só às
+telas de câmera, sempre vivo).
 
-- **Mover, não duplicar.** Com a peça carregada nos dois canais, as duas leem o
-  mesmo replicant — o PLAY de teste acenderia a barra **no programa também**.
-  Uma peça existe em um canal por vez.
-- **`persistent: false`, nascendo desligado.** Os dois erros possíveis não pesam
-  igual: um restart do NodeCG no meio do programa que voltasse em modo teste
-  tiraria todos os gráficos do ar sem ninguém pedir; um restart no meio do
-  ensaio que volte em modo programa só manda o ensaio para a janela do ar, que
-  àquela hora não está no ar. O padrão fica no lado do erro barato.
-- **O canal de teste não tem saída real.** Só `<screen>`. Se ele tiver NDI, o
-  nome não pode ser um que a produção recebe — senão o "teste" está no ar em
-  outro lugar. No config do projeto anterior o canal 2 tinha NDI `GFX - LED`:
-  como canal de teste, esse NDI sai.
-- **O selo não mente no modo teste.** O `DB_CASPAR` (§7) indexa por
-  `canal-camada`; o painel só acende **NO AR** olhando o canal de programa. No
-  modo teste, o que tocou no canal 2 acende **TESTE**, nunca NO AR.
+**Limites conhecidos:**
+- Os **textos** editados no teste (nomes, palpites) continuam nos replicants
+  depois da volta, porque só `visivel` e a cena são restaurados. O ch1 segue com
+  o texto antigo até o próximo SET.
+- Página que lê `.value` direto no boot, sem `on("change")`, escapa do
+  congelamento. O efeito só aparece no canal que não está vivo.
+- Use `persistent: false` em `DB_CASPAR_MODO`. Um restart nunca acorda em teste.
 
 **No dashboard:**
 
-- **O toggle está em TODO painel, de todo workspace** — uma tecla fina no topo,
-  montada pelo `comum.js` (que todo painel já carrega), não um botão num painel
-  só. O operador liga e desliga de onde estiver no ensaio, sem trocar de aba.
-  Todas as teclas assinam o mesmo `DB_CASPAR_MODO`, então mudam juntas.
-- **A tecla É o aviso.** Discreta (cor de placa) desligada, **amarela** ligada,
-  com "MODO TESTE LIGADO · saída no canal 2" — cor de alerta do kit, nunca o
-  verde de "no ar". Não existe faixa separada: o estado aceso na própria tecla,
-  visível em qualquer aba, é o que impede o operador de esquecer que está em
-  teste — ou de esquecer de DESLIGAR antes de o programa começar.
-- **Sem confirmação, nos dois sentidos** (pedido da produção). É um toggle de
-  um clique: o custo de um clique errado é desfeito com outro clique. Lembre
-  que ligar tira os gráficos do programa e desligar zera a cena de fullscreen —
-  num ensaio isso é o esperado; no programa, a tecla amarela à vista é a
-  proteção.
-- `position: sticky; top: 0` e não `fixed`: segue visível com o painel rolado e
-  não exige compensar altura no `body`.
-- O checklist de abertura do programa ganha uma linha: **modo teste desligado,
-  e as permanentes carregadas no canal 1** (`--osc` confirma).
+- O switch fica no bloco Caspar (e/ou numa tecla fina no topo de todo painel,
+  via `comum.js`). Desligado, cor de placa. Ligado, **amarelo**, nunca o verde
+  de "no ar".
+- Em teste, a faixa amarela mostra o retrato do PGM, e o bloco Caspar mostra
+  `PGM (canal 1) · fundo: X · TESTE (canal 2) · fundo: Y`. O selo NO AR lê
+  **sempre** o canal de programa (`CC.canal`), nunca o canal alvo. Os botões
+  passam a refletir o ensaio e voltam ao estado do ar quando o teste desliga.
+- Sem confirmação nos dois sentidos: a troca não destrói nada.
+- O checklist de abertura do programa ganha uma linha: **saída em PROGRAMA**.
 
-O painel não fala AMCP — ele escreve replicant, a extension fala AMCP. É o
-mesmo motivo do vMix: dois painéis abertos disparariam o comando duas vezes, e
-um painel fechado deixaria de comandar o servidor.
+**Verificar** (com o MCP `casparcg`, canal 1 só leitura):
+
+1. `caspar_status`: as permanentes devem estar em `[HTML]` nos dois canais.
+   `caspar_pages` lista cada gráfico duas vezes (`?caspar=1` e `?caspar=2`).
+2. Em `caspar_page_eval`/`caspar_page_sample`, o `url_contains` **tem que
+   incluir o canal** (`lt_single.html?caspar=2`). Só `lt_single` pega qualquer
+   uma das duas.
+3. `nodecg.Replicant("DB_CASPAR").value.canalVivo` numa página devolve 1 em
+   programa e 2 em teste.
+4. **Nada resetou:** `caspar_print` do canal 1 antes e depois de ligar o teste
+   deve dar o mesmo quadro.
+5. **Nada vazou:** em teste, acenda um LT e rode `caspar_page_sample` em
+   `?caspar=1`. Nada pode se mexer. Em `?caspar=2` a animação aparece.
+6. **Descarte:** dê PLAY em algo no teste e desligue. `caspar_print` do ch1 tem
+   que ficar idêntico ao de antes de entrar. O log diz
+   `SAÍDA de PROGRAMA (ensaio descartado, ar intocado)`.
+
+| Sintoma | Onde olhar |
+|---|---|
+| Troca limpou/recarregou camada | handler de `DB_CASPAR_MODO`: não pode haver CLEAR/PLAY de permanentes ali |
+| LT do teste apareceu no programa | página sem `canal.js` antes do primeiro script, ou `canalVivo` fora do `publicar()` |
+| Cena aplicada no canal errado | `pedirCena` sem `opcoes.canal`; `cenaNoAr`/`stingDesde` globais em vez de por canal |
+| Fundo recomeçou o loop na volta | faltou o `restaurandoFs`: a cena restaurada é estado, não ordem |
+| Painel sem selo em teste | o selo está lendo o canal alvo, não o de programa |
+
 
 ---
 
@@ -852,7 +939,7 @@ só muda o monitor.
 
 ### Com o MCP `casparcg` instalado, use-o primeiro
 
-Existe um servidor MCP para isto: **`mcp-casparcg`** (repo `tavinho3c/mcp-casparcg`,
+Existe um servidor MCP para isto: **`mcp-casparcg`** (repo `ottospike/mcp-casparcg`,
 instalado em `~/.claude/mcp-casparcg`, registrado como `casparcg`). Tudo desta seção
 vira ferramenta:
 
@@ -1346,7 +1433,7 @@ e é o que ele escreve no briefing:
 - `fundoSaiDepois`: quantos quadros a tabela tem para sair antes de o fundo
   começar a ir embora. Tem de ser ≥ a duração da `tlSaida` do gráfico.
 - `camadaHtml` entra na lista de `permanentes` (§4): o HTML sobe no boot e na
-  reconciliação, e no modo teste (§10) muda de canal junto.
+  reconciliação, e no modo teste (§10) fica carregado nos dois canais.
 - Confira as marcas contra o `CINF` do clipe na conexão (quantidade de quadros)
   e logue divergência. Um vídeo reexportado com 10 quadros a mais desliga tudo
   em silêncio.

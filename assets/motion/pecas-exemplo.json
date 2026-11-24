@@ -1,0 +1,45 @@
+{
+	"_leia": "'saida': 'reversa' = a saída é a ENTRADA de trás para frente, montada pelo script num webm só (pedido de 2026-11-10). Configuração do aplicar.mjs: lê a entrega da Motion, mede, reencoda com keyframes e grava a trilha de cada peça. Coordenadas sempre de CANVAS 1920x1080. 'bandas' = retângulos [x0, y0, x1, y1] onde o script mede a caixa de alfa frame a frame (a trilha que o texto segue). 'full' é medido sempre, sem precisar declarar. Ver docs/animacao-motion-lt.md §6.",
+	"fonte": "../../../../../Clash Favela Assets/latest",
+	"ffmpeg": "../../../../../Caspar-2.5.1/ffmpeg.exe",
+	"fps": 24,
+	"pecas": {
+		"l3_single": {
+			"src": "L3_Single.webm",
+			"saida": "reversa",
+			"dst": ["graphics/assets/l3/l3_single/l3_single.webm"],
+			"_bandas": "Faixas das barras À DIREITA do emote (borda do emote em x=248). Linhas do meio de cada barra.",
+			"bandas": { "vermelha": [250, 895, 760, 925], "amarela": [250, 968, 760, 986] }
+		},
+		"l3_double": {
+			"src": "L3_Double.webm",
+			"saida": "reversa",
+			"dst": ["graphics/assets/l3/l3_double/l3_double.webm"],
+			"_bandas": "Emote no centro (x 878..1038); a barra A desliza para a esquerda, a B para a direita.",
+			"bandas": {
+				"vermelhaA": [300, 895, 876, 925],
+				"amarelaA": [300, 968, 876, 986],
+				"vermelhaB": [1042, 895, 1620, 925],
+				"amarelaB": [1042, 968, 1620, 986]
+			}
+		},
+		"l3_text": { "src": "L3_Text.webm", "dst": ["graphics/assets/l3/l3_text/l3_text.webm"], "bandas": {} },
+		"l3_winner": { "src": "L3_Winner.webm", "dst": ["graphics/assets/l3/l3_winner/l3_winner.webm"], "bandas": {} },
+		"l3_hashtag": { "src": "L3_Hashtag.webm", "dst": ["graphics/assets/l3/l3_hashtag/l3_hashtag.webm"], "bandas": {} },
+		"l3_social": { "src": "L3_Social.webm", "saida": "reversa", "dst": ["graphics/assets/l3/l3_social/l3_social.webm"], "bandas": {} },
+		"_l3_social_favela": "Versão com as redes do FAVELA (entrega 2026-11-14, latest/L3_Social_Favela.webm). Mesma peça lt_social.html: DB_LTSOCIAL.versao = 'favela' escolhe este vídeo.",
+		"l3_social_favela": { "src": "L3_Social_Favela.webm", "saida": "reversa", "dst": ["graphics/assets/l3/l3_social_favela/l3_social_favela.webm"], "bandas": {} },
+		"l3_palpite": {
+			"src": "L3_Palpite.webm",
+			"saida": "reversa",
+			"dst": ["graphics/assets/l3/l3_palpiteCasters/l3_palpite.webm", "graphics/assets/l3/l3_resultadoPalpite/l3_palpite.webm"],
+			"_bandas": "Uma faixa por coluna (as 4 entram em cascata). As colunas encostam umas nas outras (630..1292, passo 165,5 = o DX do lt_palpite): cada faixa é o MIOLO da coluna, 5px para dentro de cada lado.",
+			"bandas": {
+				"col0": [635, 600, 790, 1040],
+				"col1": [801, 600, 956, 1040],
+				"col2": [967, 600, 1122, 1040],
+				"col3": [1132, 600, 1288, 1040]
+			}
+		}
+	}
+}
