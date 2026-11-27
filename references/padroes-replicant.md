@@ -173,6 +173,12 @@ da partida" em vez de pedir os dois times de novo. E quando ele guarda a referê
 guarda a **chave** (sigla, id), nunca o rótulo: o rótulo é corrigível no cadastro, e
 uma cópia congelada dele vira órfã na primeira correção.
 
+**Restringir opções: filtre a lista, nunca o índice.** Para limitar um select aos
+modos de uma liga, aos mapas de uma temporada ou ao que for, filtre a função que
+monta a **lista** de opções. O índice que resolve chave → arte/dado (`iconeModo()`,
+`mapa()`) continua completo. Se o índice for filtrado, um replicant salvo antes da
+restrição põe a peça no ar **sem imagem**, e nenhum erro aparece no painel.
+
 ## 9. Mudou o FORMATO do valor? Apague o persistido — com o servidor PARADO
 
 `defaultValue` só vale quando NÃO existe valor persistido. Acrescentou um campo,
