@@ -1197,6 +1197,30 @@ Error: ENOENT: no such file or directory, access '...\graphics\draft.html'
 - Aquele reload foi descartado e o servidor seguiu com a versão anterior em
   memória. Reinicie para valer o que você escreveu.
 
+### Quando o NodeCG não sobe
+
+**`<bundle>'s folder is named "X". Please rename it to "<bundle>".`** A pasta do
+bundle tem que ter exatamente o `name` do `package.json` dele. Cai nisso quem clona
+um repo cujo nome difere do `name` (`git clone .../nodecg-meu-bundle` cria
+`nodecg-meu-bundle/`) e quem roda `yo nodecg` de dentro de `bundles/`: o gerador
+grava `name: "bundles"`. Renomeie a **pasta**, nunca o `name`. O `name` entra nas
+URLs dos gráficos (`/bundles/<name>/graphics/...`), que já estão nas browser sources,
+e é o namespace dos replicants: trocá-lo quebra as sources e zera o estado salvo.
+
+**`better_sqlite3.node` não carrega** (`slice is not valid mach-o file`,
+`not a valid Win32 application`, `invalid ELF header`). O `node_modules` veio de
+outra máquina ou de outro sistema. O `better-sqlite3` é o único módulo nativo que
+derruba o boot, porque o banco abre no `createServer`. Os outros binários de
+plataforma (`esbuild`, `rolldown`, `@parcel/watcher`) são opcionais ou só de build.
+Não copie `node_modules` entre máquinas: rode `npm ci`, ou `npm rebuild
+better-sqlite3` para consertar no lugar.
+
+**Use Node 20–22 com o NodeCG 2.x.** Versões mais novas do Node não têm prebuild do
+`better-sqlite3`, então o módulo compila do fonte e exige toolchain (Xcode CLT,
+Build Tools do Visual Studio, `python3`). O
+`ExperimentalWarning: localStorage is not available` dessas versões é ruído e não
+afeta nada.
+
 ### O que o dev mode liga
 
 `DB_DEVMODE` é booleano puro, publicado pela extension, `persistent: false` (se

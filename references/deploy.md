@@ -46,6 +46,35 @@ o git de fora tratar a pasta como submódulo, e o clone do deploy vem vazio. Se 
 não tem commit nem remote, apague; se tem (o caso das skills em `bundles/.claude/`),
 mande pro `.gitignore` do repo de fora.
 
+### 🚨 Padrão sem barra inicial ignora em qualquer nível
+
+No `.gitignore` da instalação, `assets/` e `node_modules/` **sem a barra inicial**
+casam em qualquer profundidade, não só na raiz. Num repo com o NodeCG versionado,
+isso some com código do próprio NodeCG sem nenhum aviso do `git add`:
+`src/client/dashboard/elements/assets/*.ts` (o painel de assets do dashboard) e
+`src/server/util/send-node-modules-file/fixtures/node_modules/*` (uma fixture que
+se chama `node_modules`, mas é fonte). Escreva `/assets/`, `/node_modules/` e
+`bundles/*/node_modules/`.
+
+Depois de mexer no `.gitignore`, compare a lista versionada com o pacote oficial:
+
+```bash
+npm pack nodecg@<versão> --dry-run --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>JSON.parse(s)[0].files.forEach(f=>console.log(f.path)))' | grep -E '^(dist|src|schemas|types)/' | sort > pacote.txt
+git ls-files dist src schemas types | sort > repo.txt
+diff pacote.txt repo.txt
+```
+
+O que aparecer só em `pacote.txt` é arquivo do NodeCG que o `.gitignore` engoliu.
+
+**O `.dockerignore` também tira coisa da imagem.** Uma regra como
+`bundles/*/shared/assets` deixa a arte no git e fora da imagem. O build passa e o
+gráfico sobe com 404 nos retratos. Confira o `.dockerignore` sempre que a arte
+passar a ser versionada.
+
+**PNG versionado com `* text=auto`.** O git detecta binário e não converte, mas
+declare `*.png binary` (e `*.webm`, `*.mov`) no `.gitattributes` para não depender
+da heurística. JSON de manifest vai mudar só de CRLF para LF, o que é esperado.
+
 ## Dockerfile
 
 ```dockerfile
@@ -115,6 +144,21 @@ deveria). Depois do primeiro deploy alguém tem que **reconfigurar tudo pelo das
 de produção**. Planeje isso antes de uma transmissão, não durante.
 
 Healthcheck com `node -e` porque a imagem `slim` não tem `curl` nem `wget`.
+
+### vMix na mesma máquina do container
+
+Dentro do container, `localhost` é o próprio container. Um `cfg/<bundle>.json` com
+`"url": "http://localhost:8088/api/"` funciona no `npm start` e, no Docker, a
+integração com o vMix simplesmente não conecta, enquanto o resto do NodeCG segue
+normal. Aponte para `http://host.docker.internal:8088/api/` e, no Linux, adicione
+ao serviço:
+
+```yaml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+No servidor remoto, o vMix fica em outra máquina: use o IP dela.
 
 ## 🚨 `host: "127.0.0.1"` no cfg = container de pé e domínio em 404
 

@@ -61,6 +61,10 @@ claude plugin marketplace update nodecg-skills
 claude plugin update nodecg@nodecg-skills
 ```
 
+**Ao publicar uma mudança, suba o `version` do `.claude-plugin/plugin.json`.** O
+`plugin update` compara a versão, não o commit: com conteúdo novo e a mesma versão,
+ele responde "já está na última versão" e o cache continua no commit antigo.
+
 <details>
 <summary>Sem plugin, por clone manual</summary>
 
